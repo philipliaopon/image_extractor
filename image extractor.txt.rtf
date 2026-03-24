@@ -1,0 +1,618 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2868
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 <!DOCTYPE html>\
+<html lang="zh-TW" class="dark">\
+<head>\
+    <meta charset="UTF-8">\
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">\
+    <title>\uc0\u25552 \u31034 \u35422 \u25235 \u21462 \u22120  (Prompt Grabber)</title>\
+    <!-- \uc0\u24341 \u20837  Tailwind CSS \u36914 \u34892 \u24555 \u36895 \u12289 \u29694 \u20195 \u21270 \u30340 \u27171 \u24335 \u35373 \u35336  -->\
+    <script src="https://cdn.tailwindcss.com"></script>\
+    <script>\
+        tailwind.config = \{\
+            darkMode: 'class', // \uc0\u21855 \u29992 \u22522 \u26044  class \u30340 \u26263 \u33394 \u27169 \u24335 \
+            theme: \{\
+                extend: \{\
+                    fontFamily: \{\
+                        // \uc0\u22871 \u29992 \u24494 \u36575 \u27491 \u40657 \u39636  UI (Microsoft JhengHei UI)\
+                        sans: ['"Microsoft JhengHei UI"', '"Microsoft JhengHei"', 'sans-serif'],\
+                    \}\
+                \}\
+            \}\
+        \}\
+    </script>\
+    <!-- \uc0\u24341 \u20837  Phosphor Icons \u20316 \u28858 \u25353 \u37397 \u22294 \u31034  -->\
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>\
+    <style>\
+        /* \uc0\u33258 \u35330 \u25458 \u36600 \u27171 \u24335  */\
+        ::-webkit-scrollbar \{ width: 8px; height: 8px; \}\
+        ::-webkit-scrollbar-track \{ background: transparent; \}\
+        ::-webkit-scrollbar-thumb \{ background: #cbd5e1; border-radius: 4px; \}\
+        ::-webkit-scrollbar-thumb:hover \{ background: #94a3b8; \}\
+        .dark ::-webkit-scrollbar-thumb \{ background: #475569; \}\
+        .dark ::-webkit-scrollbar-thumb:hover \{ background: #64748b; \}\
+        \
+        .drop-zone-active \{\
+            border-color: #3b82f6 !important;\
+            background-color: #eff6ff !important;\
+        \}\
+        .dark .drop-zone-active \{\
+            background-color: rgba(59, 130, 246, 0.1) !important;\
+        \}\
+    </style>\
+</head>\
+<body class="bg-slate-50 dark:bg-slate-900 min-h-screen text-slate-800 dark:text-slate-200 font-sans p-4 md:p-8 flex flex-col items-center justify-start transition-colors duration-300">\
+\
+    <div class="max-w-4xl w-full bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-6 md:p-8 relative">\
+        \
+        <!-- \uc0\u21491 \u19978 \u35282 \u24037 \u20855 \u21015  (\u35498 \u26126  & \u26085 \u22812 \u20999 \u25563  & \u35486 \u31995 \u20999 \u25563 ) -->\
+        <div class="absolute top-4 right-4 flex gap-2">\
+            <button id="langBtn" class="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">\
+                <i class="ph ph-translate text-green-500 text-lg"></i> <span id="langText">EN</span>\
+            </button>\
+            <button id="helpBtn" class="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">\
+                <i class="ph ph-book-open text-blue-500 text-lg"></i> <span id="i18n-help">\uc0\u35498 \u26126 </span>\
+            </button>\
+            <button id="themeBtn" class="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">\
+                <i class="ph ph-sun text-yellow-400 text-lg" id="themeIcon"></i> <span id="themeText">\uc0\u20142 \u33394 </span>\
+            </button>\
+        </div>\
+\
+        <!-- \uc0\u27161 \u38988 \u21312  -->\
+        <header class="text-center mb-8 mt-12 md:mt-4 md:mb-8">\
+            <h1 class="text-3xl font-bold text-slate-900 dark:text-white flex items-center justify-center gap-2">\
+                <i class="ph ph-magic-wand text-blue-500"></i>\
+                <span id="i18n-title">\uc0\u25552 \u31034 \u35422 \u25235 \u21462 \u22120 </span>\
+            </h1>\
+            <p id="i18n-subtitle" class="text-slate-500 dark:text-slate-400 mt-2 text-sm md:text-base">\uc0\u19978 \u20659 \u22294 \u29255 \u65292 AI \u23559 \u33258 \u21205 \u28858 \u24744 \u35299 \u26512 \u20006 \u29983 \u25104 \u39640 \u36074 \u37327 \u30340 \u32362 \u22294 \u25552 \u31034 \u35422 \u12290 </p>\
+        </header>\
+\
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">\
+            \
+            <!-- \uc0\u24038 \u20596 \u65306 \u19978 \u20659 \u33287 \u38928 \u35261 \u21312  -->\
+            <div class="flex flex-col gap-4">\
+                \
+                <!-- \uc0\u25302 \u26355 \u19978 \u20659 \u21312  -->\
+                <div id="dropZone" class="relative border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors h-64 group">\
+                    <input type="file" id="fileInput" accept="image/png, image/jpeg, image/webp, image/heic" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">\
+                    \
+                    <div id="uploadPlaceholder" class="flex flex-col items-center pointer-events-none">\
+                        <i class="ph ph-upload-simple text-4xl text-slate-400 dark:text-slate-500 group-hover:text-blue-500 transition-colors mb-3"></i>\
+                        <span id="i18n-dropText" class="font-medium text-slate-700 dark:text-slate-300">\uc0\u40670 \u25802 \u25110 \u25302 \u26355 \u22294 \u29255 \u33267 \u27492 </span>\
+                        <span id="i18n-dropSubText" class="text-sm text-slate-400 dark:text-slate-500 mt-1">\uc0\u25903 \u25588  PNG, JPG, WEBP</span>\
+                    </div>\
+\
+                    <!-- \uc0\u22294 \u29255 \u38928 \u35261  (\u21021 \u22987 \u38577 \u34255 ) -->\
+                    <img id="imagePreview" class="absolute inset-0 w-full h-full object-contain p-2 hidden rounded-xl" alt="Preview Image">\
+                </div>\
+\
+                <!-- \uc0\u28145 \u24230 \u20998 \u26512 \u36984 \u38917  -->\
+                <div class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-4 rounded-xl flex flex-col gap-3">\
+                    <label class="flex items-start gap-3 cursor-pointer group/card relative p-1">\
+                        <input type="checkbox" id="detailCheck" class="mt-1 rounded text-blue-600 focus:ring-blue-500 bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 w-4 h-4 cursor-pointer">\
+                        <div class="flex flex-col">\
+                            <div class="flex items-center gap-1.5">\
+                                <span id="i18n-detailTitle" class="text-sm font-medium text-slate-800 dark:text-slate-200 group-hover/card:text-blue-600 dark:group-hover/card:text-blue-400 transition-colors">\uc0\u21855 \u29992 \u12300 \u32048 \u31680 \u25551 \u36848 \u12301 \u23436 \u25972 \u20998 \u26512 </span>\
+                                <i class="ph ph-info text-slate-400 group-hover/card:text-blue-500 transition-colors"></i>\
+                            </div>\
+                            <span id="i18n-detailSub" class="text-xs text-slate-500 dark:text-slate-400 mt-1">\uc0\u28145 \u24230 \u35299 \u26512 \u65306 \u20027 \u39636 \u36650 \u24275 \u12289 \u26381 \u35037 \u37197 \u20214 \u12289 \u21205 \u20316 \u22580 \u26223 \u33287 \u37857 \u38957 \u39080 \u26684 </span>\
+                        </div>\
+                        <!-- Tooltip -->\
+                        <div class="absolute z-50 left-8 top-full mt-1 invisible opacity-0 group-hover/card:visible group-hover/card:opacity-100 transition-all duration-300 w-64 bg-slate-800 dark:bg-slate-100 text-slate-100 dark:text-slate-800 text-xs rounded-lg p-3 shadow-xl pointer-events-none">\
+                            <div class="absolute -top-1 left-4 w-2 h-2 bg-slate-800 dark:bg-slate-100 rotate-45"></div>\
+                            <span id="i18n-detailTooltip">\uc0\u12304 \u24046 \u30064 \u35498 \u26126 \u12305 \u20596 \u37325 \u26044 \u12300 \u25972 \u39636 \u30059 \u38754 \u12301 \u30340 \u24314 \u27083 \u65292 \u36969 \u21512 \u29983 \u25104 \u20855 \u26377 \u25925 \u20107 \u24615 \u30340 \u23436 \u25972 \u22580 \u26223 \u65292 \u33287 \u35443 \u32048 \u20116 \u23448 \u36984 \u38917 \u21487 \u30090 \u21152 \u20351 \u29992 \u12290 </span>\
+                        </div>\
+                    </label>\
+                    \
+                    <div class="w-full h-px bg-slate-200 dark:bg-slate-700"></div>\
+\
+                    <label class="flex items-start gap-3 cursor-pointer group/card relative p-1">\
+                        <input type="checkbox" id="facialCheck" class="mt-1 rounded text-blue-600 focus:ring-blue-500 bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 w-4 h-4 cursor-pointer">\
+                        <div class="flex flex-col">\
+                            <div class="flex items-center gap-1.5">\
+                                <span id="i18n-facialTitle" class="text-sm font-medium text-slate-800 dark:text-slate-200 group-hover/card:text-blue-600 dark:group-hover/card:text-blue-400 transition-colors">\uc0\u21855 \u29992 \u12300 \u35443 \u32048 \u20116 \u23448 \u12301 \u29305 \u23531 \u20998 \u26512 </span>\
+                                <i class="ph ph-info text-slate-400 group-hover/card:text-blue-500 transition-colors"></i>\
+                            </div>\
+                            <span id="i18n-facialSub" class="text-xs text-slate-500 dark:text-slate-400 mt-1">\uc0\u28145 \u24230 \u35299 \u26512 \u65306 \u20154 \u31278 \u12289 \u33225 \u22411 \u12289 \u33178 \u33394 \u12289 \u39662 \u22411 /\u33394 \u12289 \u30524 \u22411 /\u30643 \u23380 \u12289 \u38989 \u38957 \u12289 \u33225 \u38960 \u12289 \u19979 \u24052 \u12289 \u32819 \u26421 \u12289 \u40763 \u22411 /\u40763 \u32764 /\u40763 \u23574 \u12289 \u21767 \u24418 \u33287 \u30473 \u27611 </span>\
+                        </div>\
+                        <!-- Tooltip -->\
+                        <div class="absolute z-50 left-8 top-full mt-1 invisible opacity-0 group-hover/card:visible group-hover/card:opacity-100 transition-all duration-300 w-64 bg-slate-800 dark:bg-slate-100 text-slate-100 dark:text-slate-800 text-xs rounded-lg p-3 shadow-xl pointer-events-none">\
+                            <div class="absolute -top-1 left-4 w-2 h-2 bg-slate-800 dark:bg-slate-100 rotate-45"></div>\
+                            <span id="i18n-facialTooltip">\uc0\u12304 \u24046 \u30064 \u35498 \u26126 \u12305 \u20596 \u37325 \u26044 \u12300 \u33225 \u37096 \u29305 \u24501 \u12301 \u30340 \u26997 \u24230 \u32048 \u21270 \u65292 \u36969 \u21512 \u29983 \u25104 \u29305 \u23531 \u20154 \u29289 \u32918 \u20687 \u65292 \u25110 \u38656 \u35201 \u31934 \u30906 \u25511 \u21046 \u38263 \u30456 \u26178 \u20351 \u29992 \u12290 </span>\
+                        </div>\
+                    </label>\
+                </div>\
+\
+                <button id="analyzeBtn" disabled class="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-medium py-3 px-6 rounded-xl transition-all flex items-center justify-center gap-2">\
+                    <i class="ph ph-scan text-xl"></i>\
+                    <span id="i18n-analyzeBtn">\uc0\u20998 \u26512 \u22294 \u29255 </span>\
+                </button>\
+            </div>\
+\
+            <!-- \uc0\u21491 \u20596 \u65306 \u32080 \u26524 \u21312  -->\
+            <div class="flex flex-col h-full relative gap-4">\
+                \
+                <!-- \uc0\u33521 \u25991 \u32080 \u26524 \u21312  -->\
+                <div class="flex flex-col flex-1 relative">\
+                    <label class="font-medium text-slate-700 dark:text-slate-300 mb-2 flex items-center justify-between">\
+                        <span class="flex items-center gap-2"><i class="ph ph-text-align-left text-blue-500"></i> <span id="i18n-enPrompt">\uc0\u33521 \u25991 \u25552 \u31034 \u35422 </span></span>\
+                        <button id="copyEnBtn" disabled class="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 disabled:text-slate-400 dark:disabled:text-slate-600 flex items-center gap-1 transition-colors"><i class="ph ph-copy"></i> <span id="i18n-copyEn">\uc0\u35079 \u35069 </span></button>\
+                    </label>\
+                    <textarea id="englishResult" readonly placeholder="..." class="w-full flex-grow min-h-[120px] p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-slate-700 dark:text-slate-300 text-sm leading-relaxed"></textarea>\
+                </div>\
+\
+                <!-- \uc0\u20013 \u25991 \u23565 \u29031 \u21312  -->\
+                <div class="flex flex-col flex-1 relative">\
+                    <label class="font-medium text-slate-700 dark:text-slate-300 mb-2 flex items-center justify-between">\
+                        <span class="flex items-center gap-2"><i class="ph ph-translate text-blue-500"></i> <span id="i18n-zhPrompt">\uc0\u20013 \u25991 \u23565 \u29031 </span></span>\
+                        <button id="copyZhBtn" disabled class="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 disabled:text-slate-400 dark:disabled:text-slate-600 flex items-center gap-1 transition-colors"><i class="ph ph-copy"></i> <span id="i18n-copyZh">\uc0\u35079 \u35069 </span></button>\
+                    </label>\
+                    <textarea id="chineseResult" readonly placeholder="..." class="w-full flex-grow min-h-[120px] p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-slate-700 dark:text-slate-300 text-sm leading-relaxed"></textarea>\
+                </div>\
+                \
+                <!-- \uc0\u36617 \u20837 \u20013 \u36974 \u32617  -->\
+                <div id="loadingOverlay" class="absolute inset-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-xl hidden flex-col items-center justify-center border border-slate-200 dark:border-slate-700 z-20">\
+                    <i class="ph ph-spinner-gap animate-spin text-4xl text-blue-500 mb-3"></i>\
+                    <p id="i18n-loading" class="text-slate-600 dark:text-slate-300 font-medium animate-pulse">AI \uc0\u27491 \u22312 \u28145 \u24230 \u35299 \u26512 \u22294 \u29255 \u32048 \u31680 ...</p>\
+                </div>\
+\
+                <!-- \uc0\u19979 \u36617 \u25353 \u37397  -->\
+                <div class="flex flex-col mt-2">\
+                    <button id="downloadBtn" disabled class="w-full bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 disabled:bg-slate-50 dark:disabled:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-600 disabled:cursor-not-allowed text-slate-700 dark:text-slate-200 font-medium py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2">\
+                        <i class="ph ph-download-simple text-lg"></i>\
+                        <span id="i18n-downloadBtn">\uc0\u19979 \u36617  TXT (\u21547 \u20013 \u33521 \u23565 \u29031 )</span>\
+                    </button>\
+                </div>\
+            </div>\
+\
+        </div>\
+    </div>\
+\
+    <!-- \uc0\u29256 \u27402 \u38913 \u23614  -->\
+    <footer class="mt-8 text-center text-sm text-slate-500 dark:text-slate-400 pb-4">\
+        v0.0.7 | &copy; 2026 <a href="https://huobest.com/" target="_blank" class="text-blue-500 hover:underline font-medium">BSD_Homemade</a>\
+    </footer>\
+\
+    <!-- \uc0\u35498 \u26126 \u35222 \u31383  Modal -->\
+    <div id="helpModal" class="fixed inset-0 z-50 hidden bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 transition-opacity">\
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl max-w-lg w-full p-6 relative border border-slate-200 dark:border-slate-700 max-h-[90vh] overflow-y-auto">\
+            <button id="closeHelpBtn" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors">\
+                <i class="ph ph-x text-2xl"></i>\
+            </button>\
+            <h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">\
+                <i class="ph ph-book-open text-blue-500"></i> <span id="i18n-modalTitle">\uc0\u20351 \u29992 \u35498 \u26126 </span>\
+            </h2>\
+            <div id="i18n-modalContent" class="space-y-4 text-slate-600 dark:text-slate-300 text-sm leading-relaxed">\
+                <!-- \uc0\u20839 \u23481 \u30001  JS \u21205 \u24907 \u36617 \u20837 \u20197 \u25903 \u25588 \u22810 \u22283 \u35486 \u31995  -->\
+            </div>\
+        </div>\
+    </div>\
+\
+    <!-- \uc0\u35338 \u24687 \u25552 \u31034 \u24392 \u31383  -->\
+    <div id="toast" class="fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-slate-800 dark:bg-white text-white dark:text-slate-800 px-6 py-3 rounded-full shadow-lg transition-all duration-300 opacity-0 translate-y-4 pointer-events-none flex items-center gap-2 z-50">\
+        <i class="ph ph-check-circle text-green-400 text-xl"></i>\
+        <span id="toastMsg" class="font-medium">\uc0\u25805 \u20316 \u25104 \u21151 </span>\
+    </div>\
+\
+    <script>\
+        // DOM Elements\
+        const fileInput = document.getElementById('fileInput');\
+        const dropZone = document.getElementById('dropZone');\
+        const uploadPlaceholder = document.getElementById('uploadPlaceholder');\
+        const imagePreview = document.getElementById('imagePreview');\
+        const analyzeBtn = document.getElementById('analyzeBtn');\
+        const detailCheck = document.getElementById('detailCheck');\
+        const facialCheck = document.getElementById('facialCheck');\
+        const englishResult = document.getElementById('englishResult');\
+        const chineseResult = document.getElementById('chineseResult');\
+        const copyEnBtn = document.getElementById('copyEnBtn');\
+        const copyZhBtn = document.getElementById('copyZhBtn');\
+        const downloadBtn = document.getElementById('downloadBtn');\
+        const loadingOverlay = document.getElementById('loadingOverlay');\
+        \
+        // Modal & Theme & Lang Elements\
+        const themeBtn = document.getElementById('themeBtn');\
+        const themeIcon = document.getElementById('themeIcon');\
+        const themeText = document.getElementById('themeText');\
+        const langBtn = document.getElementById('langBtn');\
+        const langText = document.getElementById('langText');\
+        const helpBtn = document.getElementById('helpBtn');\
+        const helpModal = document.getElementById('helpModal');\
+        const closeHelpBtn = document.getElementById('closeHelpBtn');\
+        \
+        // Toast Elements\
+        const toast = document.getElementById('toast');\
+        const toastMsg = document.getElementById('toastMsg');\
+\
+        // State variables\
+        let currentBase64 = null;\
+        let currentMimeType = null;\
+        let isDarkMode = true;\
+        let currentLang = 'zh-TW';\
+        const apiKey = ""; // API Key \
+\
+        // i18n Dictionary\
+        const i18n = \{\
+            'zh-TW': \{\
+                help: '\uc0\u35498 \u26126 ',\
+                themeLight: '\uc0\u20142 \u33394 ',\
+                themeDark: '\uc0\u26263 \u33394 ',\
+                title: '\uc0\u25552 \u31034 \u35422 \u25235 \u21462 \u22120 ',\
+                subtitle: '\uc0\u19978 \u20659 \u22294 \u29255 \u65292 AI \u23559 \u33258 \u21205 \u28858 \u24744 \u35299 \u26512 \u20006 \u29983 \u25104 \u39640 \u36074 \u37327 \u30340 \u32362 \u22294 \u25552 \u31034 \u35422 \u12290 ',\
+                dropText: '\uc0\u40670 \u25802 \u25110 \u25302 \u26355 \u22294 \u29255 \u33267 \u27492 ',\
+                dropSubText: '\uc0\u25903 \u25588  PNG, JPG, WEBP',\
+                detailTitle: '\uc0\u21855 \u29992 \u12300 \u32048 \u31680 \u25551 \u36848 \u12301 \u23436 \u25972 \u20998 \u26512 ',\
+                detailSub: '\uc0\u28145 \u24230 \u35299 \u26512 \u65306 \u20027 \u39636 \u36650 \u24275 \u12289 \u26381 \u35037 \u37197 \u20214 \u12289 \u21205 \u20316 \u22580 \u26223 \u33287 \u37857 \u38957 \u39080 \u26684 ',\
+                detailTooltip: '\uc0\u12304 \u24046 \u30064 \u35498 \u26126 \u12305 \u20596 \u37325 \u26044 \u12300 \u25972 \u39636 \u30059 \u38754 \u12301 \u30340 \u24314 \u27083 \u65292 \u36969 \u21512 \u29983 \u25104 \u20855 \u26377 \u25925 \u20107 \u24615 \u30340 \u23436 \u25972 \u22580 \u26223 \u65292 \u33287 \u35443 \u32048 \u20116 \u23448 \u36984 \u38917 \u21487 \u30090 \u21152 \u20351 \u29992 \u12290 ',\
+                facialTitle: '\uc0\u21855 \u29992 \u12300 \u35443 \u32048 \u20116 \u23448 \u12301 \u29305 \u23531 \u20998 \u26512 ',\
+                facialSub: '\uc0\u28145 \u24230 \u35299 \u26512 \u65306 \u20154 \u31278 \u12289 \u33225 \u22411 \u12289 \u33178 \u33394 \u12289 \u39662 \u22411 /\u33394 \u12289 \u30524 \u22411 /\u30643 \u23380 \u12289 \u38989 \u38957 \u12289 \u33225 \u38960 \u12289 \u19979 \u24052 \u12289 \u32819 \u26421 \u12289 \u40763 \u22411 /\u40763 \u32764 /\u40763 \u23574 \u12289 \u21767 \u24418 \u33287 \u30473 \u27611 ',\
+                facialTooltip: '\uc0\u12304 \u24046 \u30064 \u35498 \u26126 \u12305 \u20596 \u37325 \u26044 \u12300 \u33225 \u37096 \u29305 \u24501 \u12301 \u30340 \u26997 \u24230 \u32048 \u21270 \u65292 \u36969 \u21512 \u29983 \u25104 \u29305 \u23531 \u20154 \u29289 \u32918 \u20687 \u65292 \u25110 \u38656 \u35201 \u31934 \u30906 \u25511 \u21046 \u38263 \u30456 \u26178 \u20351 \u29992 \u12290 ',\
+                analyzeBtn: '\uc0\u20998 \u26512 \u22294 \u29255 ',\
+                enPrompt: '\uc0\u33521 \u25991 \u25552 \u31034 \u35422 ',\
+                zhPrompt: '\uc0\u20013 \u25991 \u23565 \u29031 ',\
+                copyEn: '\uc0\u35079 \u35069 ',\
+                copyZh: '\uc0\u35079 \u35069 ',\
+                downloadBtn: '\uc0\u19979 \u36617  TXT (\u21547 \u20013 \u33521 \u23565 \u29031 )',\
+                loading: 'AI \uc0\u27491 \u22312 \u28145 \u24230 \u35299 \u26512 \u22294 \u29255 \u32048 \u31680 ...',\
+                placeholderEn: '\uc0\u20998 \u26512 \u24460 \u30340 \u33521 \u25991 \u25552 \u31034 \u35422 \u23559 \u39023 \u31034 \u26044 \u27492 ...',\
+                placeholderZh: '\uc0\u20013 \u25991 \u32763 \u35695 \u23559 \u39023 \u31034 \u26044 \u27492 ...',\
+                toastSuccess: '\uc0\u25805 \u20316 \u25104 \u21151 ',\
+                toastFormatError: '\uc0\u35531 \u19978 \u20659 \u22294 \u29255 \u27284 \u26696  (PNG, JPG, WEBP)',\
+                toastAnalysisDone: '\uc0\u20998 \u26512 \u23436 \u25104 \u65281 ',\
+                toastGenerationDone: '\uc0\u25552 \u31034 \u35422 \u29983 \u25104 \u25104 \u21151 \u65281 ',\
+                toastAnalysisError: '\uc0\u29983 \u25104 \u25104 \u21151 \u65292 \u20294 \u26684 \u24335 \u35299 \u26512 \u26377 \u29781 \u30133 ',\
+                toastCopySuccess: '\uc0\u24050 \u35079 \u35069 \u21040 \u21098 \u36028 \u31807 ',\
+                toastCopyFail: '\uc0\u35079 \u35069 \u22833 \u25943 ',\
+                toastDownload: '\uc0\u38283 \u22987 \u19979 \u36617 ',\
+                modalTitle: '\uc0\u20351 \u29992 \u35498 \u26126 ',\
+                modalContent: `\
+                    <p>\uc0\u27489 \u36814 \u20351 \u29992 \u25552 \u31034 \u35422 \u25235 \u21462 \u22120 \u65281 \u36889 \u26159 \u19968 \u20491 \u33021 \u23559 \u20219 \u20309 \u22294 \u29255 \u21453 \u25512 \u28858 \u39640 \u21697 \u36074 \u32362 \u22294 \u25552 \u31034 \u35422 \u65288 Prompt\u65289 \u30340 \u24037 \u20855 \u12290 </p>\
+                    <ul class="list-disc pl-5 space-y-2">\
+                        <li><strong>\uc0\u19978 \u20659 \u22294 \u29255 \u65306 </strong>\u25903 \u25588 \u40670 \u25802 \u19978 \u20659 \u25110 \u30452 \u25509 \u23559 \u22294 \u29255 \u25302 \u26355 \u33267 \u34395 \u32218 \u26694 \u20839 \u12290 </li>\
+                        <li><strong>\uc0\u19968 \u33324 \u20998 \u26512 \u65306 </strong>AI \u26371 \u24555 \u36895 \u25235 \u21462 \u22294 \u29255 \u30340 \u26680 \u24515 \u20027 \u39636 \u33287 \u39080 \u26684 \u12290 </li>\
+                        <li><strong>\uc0\u32048 \u31680 \u25551 \u36848 \u21151 \u33021 \u65306 </strong>\u25505 \u29992 \u26997 \u20854 \u22196 \u35641 \u30340 \u20116 \u22823 \u26694 \u26550 \u36914 \u34892 \u28145 \u24230 \u35299 \u26512 \u65306 \u20027 \u39636 \u12289 \u26381 \u35037 \u12289 \u21205 \u20316 \u12289 \u22580 \u26223 \u12289 \u37857 \u38957 \u12290 </li>\
+                        <li><strong>\uc0\u35443 \u32048 \u20116 \u23448 \u21151 \u33021 \u65306 </strong>\u26997 \u24230 \u32048 \u21270 \u20154 \u29289 \u38754 \u37096 \u29305 \u24501 \u65292 \u21253 \u21547 \u20154 \u31278 \u12289 \u33225 \u22411 \u12289 \u20116 \u23448 \u32048 \u31680 \u31561 \u12290 </li>\
+                        <li><strong>\uc0\u19968 \u37749 \u35079 \u35069 \u33287 \u19979 \u36617 \u65306 </strong>\u29983 \u25104 \u23436 \u25104 \u24460 \u65292 \u21487 \u20197 \u30452 \u25509 \u35079 \u35069 \u33521 \u25991 \u39221 \u32102  Banana/Midjourney \u31561 \u24037 \u20855 \u65292 \u25110 \u19979 \u36617 \u25104  TXT \u25991 \u20214 \u25910 \u34255 \u12290 </li>\
+                    </ul>\
+                `\
+            \},\
+            'en': \{\
+                help: 'Help',\
+                themeLight: 'Light',\
+                themeDark: 'Dark',\
+                title: 'Prompt Grabber',\
+                subtitle: 'Upload an image, and AI will automatically analyze and generate high-quality prompts.',\
+                dropText: 'Click or drag image here',\
+                dropSubText: 'Supports PNG, JPG, WEBP',\
+                detailTitle: 'Enable "Detailed Description" Analysis',\
+                detailSub: 'Deep analysis: Subject outline, clothing, action scene, and camera style.',\
+                detailTooltip: '[Difference] Focuses on the "overall composition", ideal for generating story-driven complete scenes. Can be used together with Facial Analysis.',\
+                facialTitle: 'Enable "Detailed Facial" Analysis',\
+                facialSub: 'Deep analysis: Race, face shape, skin color, hair, eyes, facial features, and lips.',\
+                facialTooltip: '[Difference] Focuses on extreme detailing of "facial features", ideal for portrait shots or when precise facial control is required.',\
+                analyzeBtn: 'Analyze Image',\
+                enPrompt: 'English Prompt',\
+                zhPrompt: 'Chinese Translation',\
+                copyEn: 'Copy',\
+                copyZh: 'Copy',\
+                downloadBtn: 'Download TXT',\
+                loading: 'AI is deeply analyzing the image...',\
+                placeholderEn: 'The generated English prompt will appear here...',\
+                placeholderZh: 'The Chinese translation will appear here...',\
+                toastSuccess: 'Success',\
+                toastFormatError: 'Please upload an image file (PNG, JPG, WEBP)',\
+                toastAnalysisDone: 'Analysis Complete!',\
+                toastGenerationDone: 'Prompt Generated Successfully!',\
+                toastAnalysisError: 'Generated successfully, but parsing had minor issues.',\
+                toastCopySuccess: 'Copied to clipboard',\
+                toastCopyFail: 'Copy failed',\
+                toastDownload: 'Downloading',\
+                modalTitle: 'User Guide',\
+                modalContent: `\
+                    <p>Welcome to the Prompt Grabber! A tool that reverse-engineers any image into high-quality drawing prompts.</p>\
+                    <ul class="list-disc pl-5 space-y-2">\
+                        <li><strong>Upload Image:</strong> Click to upload or drag and drop an image into the dashed box.</li>\
+                        <li><strong>General Analysis:</strong> AI quickly captures the core subject and style.</li>\
+                        <li><strong>Detailed Description:</strong> Uses 5 strict frameworks: Subject, Clothing, Action, Scene, and Camera.</li>\
+                        <li><strong>Detailed Facial:</strong> Extremely detailed facial feature extraction.</li>\
+                        <li><strong>Copy & Download:</strong> Easily copy the English prompt for tools like Midjourney, or download as TXT.</li>\
+                    </ul>\
+                `\
+            \}\
+        \};\
+\
+        function applyLanguage() \{\
+            const t = i18n[currentLang];\
+            document.getElementById('i18n-help').textContent = t.help;\
+            document.getElementById('themeText').textContent = isDarkMode ? t.themeLight : t.themeDark;\
+            document.getElementById('i18n-title').textContent = t.title;\
+            document.getElementById('i18n-subtitle').textContent = t.subtitle;\
+            document.getElementById('i18n-dropText').textContent = t.dropText;\
+            document.getElementById('i18n-dropSubText').textContent = t.dropSubText;\
+            document.getElementById('i18n-detailTitle').textContent = t.detailTitle;\
+            document.getElementById('i18n-detailSub').textContent = t.detailSub;\
+            document.getElementById('i18n-detailTooltip').textContent = t.detailTooltip;\
+            document.getElementById('i18n-facialTitle').textContent = t.facialTitle;\
+            document.getElementById('i18n-facialSub').textContent = t.facialSub;\
+            document.getElementById('i18n-facialTooltip').textContent = t.facialTooltip;\
+            document.getElementById('i18n-analyzeBtn').textContent = t.analyzeBtn;\
+            document.getElementById('i18n-enPrompt').textContent = t.enPrompt;\
+            document.getElementById('i18n-zhPrompt').textContent = t.zhPrompt;\
+            document.getElementById('i18n-copyEn').textContent = t.copyEn;\
+            document.getElementById('i18n-copyZh').textContent = t.copyZh;\
+            document.getElementById('i18n-downloadBtn').textContent = t.downloadBtn;\
+            document.getElementById('i18n-loading').textContent = t.loading;\
+            \
+            englishResult.placeholder = t.placeholderEn;\
+            chineseResult.placeholder = t.placeholderZh;\
+            \
+            document.getElementById('i18n-modalTitle').textContent = t.modalTitle;\
+            document.getElementById('i18n-modalContent').innerHTML = t.modalContent;\
+        \}\
+\
+        langBtn.addEventListener('click', () => \{\
+            currentLang = currentLang === 'zh-TW' ? 'en' : 'zh-TW';\
+            langText.textContent = currentLang === 'zh-TW' ? 'EN' : '\uc0\u20013 ';\
+            applyLanguage();\
+        \});\
+\
+        // Init language on load\
+        applyLanguage();\
+\
+        // --- Theme Toggle ---\
+        themeBtn.addEventListener('click', () => \{\
+            isDarkMode = !isDarkMode;\
+            if (isDarkMode) \{\
+                document.documentElement.classList.add('dark');\
+                themeIcon.className = 'ph ph-sun text-yellow-400 text-lg';\
+                themeText.textContent = i18n[currentLang].themeLight;\
+            \} else \{\
+                document.documentElement.classList.remove('dark');\
+                themeIcon.className = 'ph ph-moon text-slate-500 text-lg';\
+                themeText.textContent = i18n[currentLang].themeDark;\
+            \}\
+        \});\
+\
+        // --- Help Modal ---\
+        helpBtn.addEventListener('click', () => helpModal.classList.remove('hidden'));\
+        closeHelpBtn.addEventListener('click', () => helpModal.classList.add('hidden'));\
+        helpModal.addEventListener('click', (e) => \{\
+            if (e.target === helpModal) helpModal.classList.add('hidden');\
+        \});\
+\
+        // --- Drag & Drop Implementation ---\
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => \{\
+            dropZone.addEventListener(eventName, preventDefaults, false);\
+        \});\
+\
+        function preventDefaults(e) \{\
+            e.preventDefault();\
+            e.stopPropagation();\
+        \}\
+\
+        ['dragenter', 'dragover'].forEach(eventName => \{\
+            dropZone.addEventListener(eventName, () => dropZone.classList.add('drop-zone-active'), false);\
+        \});\
+\
+        ['dragleave', 'drop'].forEach(eventName => \{\
+            dropZone.addEventListener(eventName, () => dropZone.classList.remove('drop-zone-active'), false);\
+        \});\
+\
+        dropZone.addEventListener('drop', (e) => \{\
+            const dt = e.dataTransfer;\
+            const files = dt.files;\
+            if (files.length > 0) handleFile(files[0]);\
+        \});\
+\
+        fileInput.addEventListener('change', function() \{\
+            if (this.files.length > 0) handleFile(this.files[0]);\
+        \});\
+\
+        function handleFile(file) \{\
+            if (!file.type.startsWith('image/')) \{\
+                showToast(i18n[currentLang].toastFormatError, 'error');\
+                return;\
+            \}\
+\
+            currentMimeType = file.type;\
+            const reader = new FileReader();\
+            \
+            reader.onload = function(e) \{\
+                imagePreview.src = e.target.result;\
+                imagePreview.classList.remove('hidden');\
+                uploadPlaceholder.classList.add('hidden');\
+                \
+                currentBase64 = e.target.result.split(',')[1];\
+                analyzeBtn.disabled = false;\
+                \
+                englishResult.value = '';\
+                chineseResult.value = '';\
+                copyEnBtn.disabled = true;\
+                copyZhBtn.disabled = true;\
+                downloadBtn.disabled = true;\
+            \}\
+            reader.readAsDataURL(file);\
+        \}\
+\
+        // --- API & Retry Logic ---\
+        async function fetchWithRetry(url, options, maxRetries = 5) \{\
+            const delays = [1000, 2000, 4000, 8000, 16000];\
+            for (let i = 0; i <= maxRetries; i++) \{\
+                try \{\
+                    const response = await fetch(url, options);\
+                    if (!response.ok) \{\
+                        const errorData = await response.json().catch(() => (\{\}));\
+                        throw new Error(errorData.error?.message || `HTTP Error: $\{response.status\}`);\
+                    \}\
+                    return await response.json();\
+                \} catch (err) \{\
+                    if (i === maxRetries) throw err;\
+                    await new Promise(resolve => setTimeout(resolve, delays[i]));\
+                \}\
+            \}\
+        \}\
+\
+        // --- Analysis Execution ---\
+        analyzeBtn.addEventListener('click', async () => \{\
+            if (!currentBase64 || !currentMimeType) return;\
+\
+            // UI State updates\
+            analyzeBtn.disabled = true;\
+            loadingOverlay.classList.remove('hidden');\
+            englishResult.value = '';\
+            chineseResult.value = '';\
+            copyEnBtn.disabled = true;\
+            copyZhBtn.disabled = true;\
+            downloadBtn.disabled = true;\
+\
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=$\{apiKey\}`;\
+            \
+            let promptText = "Please analyze this image in extreme detail and generate a highly descriptive, comprehensive text-to-image prompt (suitable for Midjourney or Stable Diffusion).\\n";\
+            \
+            let frameworks = [];\
+            if (detailCheck.checked) \{\
+                frameworks.push(`- Subject/Character & Action/Pose (e.g., posture, gestures, interaction).\\n- Clothing/Accessories (e.g., dressing style, outfit, jewelry, props).\\n- Scene/Atmosphere (e.g., location, time, weather, environment decorations, lighting/shadows).\\n- Camera/Style (e.g., focal length, aperture, composition, shot type, style, viewing angle).`);\
+            \}\
+            if (facialCheck.checked) \{\
+                frameworks.push(`- Detailed Facial Features (MUST include specific descriptive terms for: Race/Ethnicity, Face Shape (e.g. oval, square, high cheekbones), Skin Color, Hair Color/Style (e.g. ombre, messy waves, pixie cut), Eye Shape (e.g. fox eyes, almond, doe eyes), Pupil Color/Shape, Forehead, Cheeks, Chin, Ears (e.g. elf ears, protruding), Nose Shape/Wings/Tip (e.g. aquiline, button nose), Lips (e.g. cherry lips, downturned), Eyebrows (e.g. arched, bushy)).`);\
+            \}\
+\
+            if (frameworks.length > 0) \{\
+                promptText += `YOU MUST strictly use the following framework to structure your prompt and provide rich, exhaustive details:\\n$\{frameworks.join('\\n')\}\\n`;\
+            \} else \{\
+                promptText += `Focus strictly on the subject, action, lighting, camera angle, medium, style, and mood.\\n`;\
+            \}\
+\
+            promptText += `The resulting prompt must be lengthy and highly descriptive to allow perfect recreation of the original image.\\nOutput ONLY a valid JSON object with two keys:\\n"english": "the highly detailed English prompt (comma separated keywords preferred)",\\n"chinese": "the Traditional Chinese translation of the prompt"\\nDo not include any other text or markdown formatting.`;\
+\
+            const payload = \{\
+                contents: [\{\
+                    role: "user",\
+                    parts: [\
+                        \{ text: promptText \},\
+                        \{ inlineData: \{ mimeType: currentMimeType, data: currentBase64 \} \}\
+                    ]\
+                \}]\
+            \};\
+\
+            try \{\
+                const data = await fetchWithRetry(url, \{\
+                    method: 'POST',\
+                    headers: \{ 'Content-Type': 'application/json' \},\
+                    body: JSON.stringify(payload)\
+                \});\
+\
+                const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;\
+\
+                if (generatedText) \{\
+                    try \{\
+                        const cleanJson = generatedText.replace(/```json/g, '').replace(/```/g, '').trim();\
+                        const resultObj = JSON.parse(cleanJson);\
+                        \
+                        englishResult.value = resultObj.english || '';\
+                        chineseResult.value = resultObj.chinese || '';\
+                        \
+                        copyEnBtn.disabled = false;\
+                        copyZhBtn.disabled = false;\
+                        downloadBtn.disabled = false;\
+                        \
+                        const msgKey = (detailCheck.checked || facialCheck.checked) ? 'toastAnalysisDone' : 'toastGenerationDone';\
+                        showToast(i18n[currentLang][msgKey], 'success');\
+                    \} catch (e) \{\
+                        englishResult.value = generatedText;\
+                        copyEnBtn.disabled = false;\
+                        downloadBtn.disabled = false;\
+                        showToast(i18n[currentLang].toastAnalysisError, 'success');\
+                    \}\
+                \} else \{\
+                    throw new Error("Cannot retrieve complete response from API.");\
+                \}\
+            \} catch (error) \{\
+                console.error("API Error:", error);\
+                englishResult.value = `API Request Error / API \uc0\u35531 \u27714 \u30332 \u29983 \u37679 \u35492 :\\n$\{error.message\}`;\
+                showToast('Generation failed. / \uc0\u29983 \u25104 \u22833 \u25943 \u12290 ', 'error');\
+            \} finally \{\
+                analyzeBtn.disabled = false;\
+                loadingOverlay.classList.add('hidden');\
+            \}\
+        \});\
+\
+        // --- Clipboard & Download Functionality ---\
+        function copyToClipboard(text) \{\
+            const textArea = document.createElement("textarea");\
+            textArea.value = text;\
+            textArea.style.position = "fixed";\
+            textArea.style.left = "-999999px";\
+            textArea.style.top = "-999999px";\
+            document.body.appendChild(textArea);\
+            textArea.focus();\
+            textArea.select();\
+            \
+            try \{\
+                document.execCommand('copy');\
+                showToast(i18n[currentLang].toastCopySuccess, 'success');\
+            \} catch (err) \{\
+                showToast(i18n[currentLang].toastCopyFail, 'error');\
+            \} finally \{\
+                textArea.remove();\
+            \}\
+        \}\
+\
+        copyEnBtn.addEventListener('click', () => \{\
+            if (englishResult.value) copyToClipboard(englishResult.value);\
+        \});\
+\
+        copyZhBtn.addEventListener('click', () => \{\
+            if (chineseResult.value) copyToClipboard(chineseResult.value);\
+        \});\
+\
+        downloadBtn.addEventListener('click', () => \{\
+            if (!englishResult.value) return;\
+            \
+            const content = `\uc0\u12304 English Prompt\u12305 \\n$\{englishResult.value\}\\n\\n\u12304 \u20013 \u25991 \u23565 \u29031 \u12305 \\n$\{chineseResult.value\}`;\
+            const blob = new Blob([content], \{ type: 'text/plain;charset=utf-8' \});\
+            const url = URL.createObjectURL(blob);\
+            const a = document.createElement('a');\
+            \
+            a.href = url;\
+            a.download = `Prompt_$\{new Date().getTime()\}.txt`;\
+            document.body.appendChild(a);\
+            a.click();\
+            \
+            setTimeout(() => \{\
+                document.body.removeChild(a);\
+                window.URL.revokeObjectURL(url);\
+            \}, 0);\
+            \
+            showToast(i18n[currentLang].toastDownload, 'success');\
+        \});\
+\
+        // --- Toast Notifications ---\
+        let toastTimeout;\
+        function showToast(message, type = 'success') \{\
+            toastMsg.textContent = message;\
+            \
+            const icon = toast.querySelector('i');\
+            if (type === 'success') \{\
+                icon.className = 'ph ph-check-circle text-green-400 dark:text-green-500 text-xl';\
+            \} else \{\
+                icon.className = 'ph ph-warning-circle text-red-400 dark:text-red-500 text-xl';\
+            \}\
+\
+            toast.classList.remove('opacity-0', 'translate-y-4');\
+            toast.classList.add('opacity-100', 'translate-y-0');\
+\
+            clearTimeout(toastTimeout);\
+            toastTimeout = setTimeout(() => \{\
+                toast.classList.remove('opacity-100', 'translate-y-0');\
+                toast.classList.add('opacity-0', 'translate-y-4');\
+            \}, 3000);\
+        \}\
+    </script>\
+</body>\
+</html>}
