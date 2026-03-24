@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>提示詞抓取器 (Prompt Grabber)</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Phosphor Icons -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <style>
+    /* 自定義捲動欄 */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    .dark ::-webkit-scrollbar-thumb { background: #475569; }
+    .dark ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+    .drop-zone-active {
+      border-color: #3b82f6 !important;
+      background-color: #eff6ff !important;
+    }
+    .dark .drop-zone-active {
+      background-color: rgba(59, 130, 246, 0.1) !important;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 min-h-screen transition-colors duration-300">
+
+<div class="max-w-5xl mx-auto p-6 space-y-6">
+  <!-- Header -->
+  <header class="flex items-center justify-between">
+    <div>
+      <h1 id="i18n-title" class="text-3xl font-bold text-slate-800 dark:text-white">提示詞抓取器</h1>
+      <p id="i18n-subtitle" class="text-sm text-slate-600 dark:text-slate-400 mt-1">上傳圖片，AI 將自動為你解析並生成高質量的繪圖提示詞。</p>
+    </div>
+    <div class="flex gap-2">
+      <button id="themeBtn" class="px-3 py-2 rounded-lg bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 shadow transition flex items-center gap-2">
+        <i id="themeIcon" class="ph ph-sun text-yellow-400 text-lg"></i>
+        <span id="themeText" class="text-sm text-slate-700 dark:text-slate-300">亮色</span>
+      </button>
+      <button id="langBtn" class="px-3 py-2 rounded-lg bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 shadow transition text-sm font-semibold text-slate-700 dark:text-slate-300">
+        <span id="langText">EN</span>
+      </button>
+      <button id="helpBtn" class="px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 shadow transition text-white text-sm font-semibold flex items-center gap-1">
+        <i class="ph ph-question"></i> <span id="i18n-help">說明</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Upload Zone -->
+  <div id="dropZone" class="relative border-4 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-12 text-center cursor-pointer bg-white dark:bg-slate-800/50 hover:border-blue-400 dark:hover:border-blue-500 transition">
+    <input type="file" id="fileInput" accept="image/png, image/jpeg, image/webp, image/heic" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+    <div id="uploadPlaceholder" class="space-y-2">
+      <i class="ph ph-image text-6xl text-slate-400 dark:text-slate-500"></i>
+      <p id="i18n-dropText" class="text-lg font-medium text-slate-700 dark:text-slate-300">點擊或拖曳圖片至此</p>
+      <p id="i18n-dropSubText" class="text-sm text-slate-500 dark:text-slate-400">支援 PNG, JPG, WEBP</p>
+    </div>
+    <img id="imagePreview" class="hidden max-w-full max-h-96 mx-auto rounded-lg shadow" alt="Preview Image">
+  </div>
+
+  <!-- Options -->
+  <div class="grid md:grid-cols-2 gap-4">
+    <div class="bg-white dark:bg-slate-800 p-4 rounded-lg shadow space-y-2">
+      <div class="flex items-start gap-3">
+        <input type="checkbox" id="detailCheck" class="mt-1 rounded text-blue-600 focus:ring-blue-500 bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 w-4 h-4 cursor-pointer">
+        <div class="flex-1">
+          <label for="detailCheck" class="cursor-pointer">
+            <p id="i18n-detailTitle" class="font-semibold text-slate-800 dark:text-white">啟用「詳細描述」層次分析</p>
+            <p id="i18n-detailSub" class="text-xs text-slate-600 dark:text-slate-400 mt-1">深度解析：主體輪廈、服裝配件、動作場景與鏡頭風格</p>
+          </label>
+          <p id="i18n-detailTooltip" class="text-xs text-blue-600 dark:text-blue-400 mt-2">【差異說明】側重於「整體畫面」的批批，適合生成具有故事性的完整場景，與詳詳詳証的更可以加使用。</p>
+        </div>
+      </div>
+    </div>
+    <div class="bg-white dark:bg-slate-800 p-4 rounded-lg shadow space-y-2">
+      <div class="flex items-start gap-3">
+        <input type="checkbox" id="facialCheck" class="mt-1 rounded text-blue-600 focus:ring-blue-500 bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 w-4 h-4 cursor-pointer">
+        <div class="flex-1">
+          <label for="facialCheck" class="cursor-pointer">
+            <p id="i18n-facialTitle" class="font-semibold text-slate-800 dark:text-white">啟用「詳詳場」特層分析</p>
+            <p id="i18n-facialSub" class="text-xs text-slate-600 dark:text-slate-400 mt-1">深度解析：人種、臉型、膚色、髮型/色、眼睛/瞳孔、鼻頭、臉頌、下巴、耳朵、鬢型/鬢習/鬢尖、唇形與眉毛</p>
+          </label>
+          <p id="i18n-facialTooltip" class="text-xs text-blue-600 dark:text-blue-400 mt-2">【差異說明】側重於「臉部特徵」的極度詳細，適合生成特層人物肘像，或需要精細控制臉部時使用。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Analyze Button -->
+  <div class="text-center">
+    <button id="analyzeBtn" disabled class="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-slate-400 disabled:to-slate-500 text-white font-bold rounded-lg shadow-lg transition transform hover:scale-105 disabled:scale-100 disabled:cursor-not-allowed">
+      <i class="ph ph-sparkle"></i> <span id="i18n-analyzeBtn">分析圖片</span>
+    </button>
+  </div>
+
+  <!-- Results -->
+  <div class="grid md:grid-cols-2 gap-4">
+    <div class="bg-white dark:bg-slate-800 p-4 rounded-lg shadow">
+      <div class="flex justify-between items-center mb-2">
+        <h3 id="i18n-enPrompt" class="font-semibold text-slate-800 dark:text-white">英文提示詞</h3>
+        <button id="copyEnBtn" disabled class="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-slate-400 text-white rounded transition">
+          <i class="ph ph-copy"></i> <span id="i18n-copyEn">複製</span>
+        </button>
+      </div>
+      <textarea id="englishResult" readonly class="w-full h-64 p-3 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-800 dark:text-slate-200 resize-none" placeholder="分析後的英文提示詞將顯示於此..."></textarea>
+    </div>
+    <div class="bg-white dark:bg-slate-800 p-4 rounded-lg shadow">
+      <div class="flex justify-between items-center mb-2">
+        <h3 id="i18n-zhPrompt" class="font-semibold text-slate-800 dark:text-white">中文對照</h3>
+        <button id="copyZhBtn" disabled class="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-slate-400 text-white rounded transition">
+          <i class="ph ph-copy"></i> <span id="i18n-copyZh">複製</span>
+        </button>
+      </div>
+      <textarea id="chineseResult" readonly class="w-full h-64 p-3 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-800 dark:text-slate-200 resize-none" placeholder="中文翻譯將顯示於此..."></textarea>
+    </div>
+  </div>
+
+  <!-- Download Button -->
+  <div class="text-center">
+    <button id="downloadBtn" disabled class="px-6 py-2 bg-green-600 hover:bg-green-700 disabled:bg-slate-400 text-white font-semibold rounded-lg shadow transition">
+      <i class="ph ph-download"></i> <span id="i18n-downloadBtn">下載 TXT (包含中英對照)</span>
+    </button>
+  </div>
+</div>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+  <div class="bg-white dark:bg-slate-800 p-8 rounded-xl shadow-2xl text-center space-y-4">
+    <i class="ph ph-circle-notch animate-spin text-5xl text-blue-600"></i>
+    <p id="i18n-loading" class="text-lg font-semibold text-slate-800 dark:text-white">AI 正在深度解析圖片詳情...</p>
+  </div>
+</div>
+
+<!-- Toast Notification -->
+<div id="toast" class="fixed bottom-6 right-6 bg-white dark:bg-slate-800 px-6 py-4 rounded-lg shadow-2xl flex items-center gap-3 opacity-0 translate-y-4 transition-all duration-300 z-50">
+  <i class="ph ph-check-circle text-green-400 dark:text-green-500 text-xl"></i>
+  <span id="toastMsg" class="text-slate-800 dark:text-white font-medium"></span>
+</div>
+
+<!-- Help Modal -->
+<div id="helpModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+  <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div class="p-6 border-b border-slate-200 dark:border-slate-700">
+      <div class="flex justify-between items-center">
+        <h2 id="i18n-modalTitle" class="text-2xl font-bold text-slate-800 dark:text-white">使用說明</h2>
+        <button id="closeHelpBtn" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition">
+          <i class="ph ph-x text-2xl"></i>
+        </button>
+      </div>
+    </div>
+    <div id="i18n-modalContent" class="p-6 text-slate-700 dark:text-slate-300 space-y-4"></div>
+  </div>
+</div>
+
+<!-- Footer -->
+<footer class="text-center text-sm text-slate-500 dark:text-slate-400 pb-6">
+  v0.0.7 | © 2026 <a href="https://huobest.com/" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline">BSD_Homemade</a>
+</footer>
+
+<script>
+// DOM Elements
+const fileInput = document.getElementById('fileInput');
+const dropZone = document.getElementById('dropZone');
+const uploadPlaceholder = document.getElementById('uploadPlaceholder');
+const imagePreview = document.getElementById('imagePreview');
+const analyzeBtn = document.getElementById('analyzeBtn');
+const detailCheck = document.getElementById('detailCheck');
+const facialCheck = document.getElementById('facialCheck');
+const englishResult = document.getElementById('englishResult');
+const chineseResult = document.getElementById('chineseResult');
+const copyEnBtn = document.getElementById('copyEnBtn');
+const copyZhBtn = document.getElementById('copyZhBtn');
+const downloadBtn = document.getElementById('downloadBtn');
+const loadingOverlay = document.getElementById('loadingOverlay');
+const themeBtn = document.getElementById('themeBtn');
+const themeIcon = document.getElementById('themeIcon');
+const themeText = document.getElementById('themeText');
+const langBtn = document.getElementById('langBtn');
+const langText = document.getElementById('langText');
+const helpBtn = document.getElementById('helpBtn');
+const helpModal = document.getElementById('helpModal');
+const closeHelpBtn = document.getElementById('closeHelpBtn');
+const toast = document.getElementById('toast');
+const toastMsg = document.getElementById('toastMsg');
+
+// State variables
+let currentBase64 = null;
+let currentMimeType = null;
+let isDarkMode = true;
+let currentLang = 'zh-TW';
+const apiKey = ""; // TODO: Add your Gemini API Key here
+
+// i18n Dictionary
+const i18n = {
+  'zh-TW': {
+    help: '說明',
+    themeLight: '亮色',
+    themeDark: '暗色',
+    title: '提示詞抓取器',
+    subtitle: '上傳圖片，AI 將自動為你解析並生成高質量的繪圖提示詞。',
+    dropText: '點擊或拖曳圖片至此',
+    dropSubText: '支援 PNG, JPG, WEBP',
+    detailTitle: '啟用「詳細描述」層次分析',
+    detailSub: '深度解析：主體輪廈、服裝配件、動作場景與鏡頭風格',
+    detailTooltip: '【差異說明】側重於「整體畫面」的批批，適合生成具有故事性的完整場景，與詳詳詳証的更可以加使用。',
+    facialTitle: '啟用「詳詳場」特層分析',
+    facialSub: '深度解析：人種、臉型、膚色、髮型/色、眼睛/瞳孔、鼻頭、臉頌、下巴、耳朵、鬢型/鬢習/鬢尖、唇形與眉毛',
+    facialTooltip: '【差異說明】側重於「臉部特徵」的極度詳細，適合生成特層人物肘像，或需要精細控制臉部時使用。',
+    analyzeBtn: '分析圖片',
+    enPrompt: '英文提示詞',
+    zhPrompt: '中文對照',
+    copyEn: '複製',
+    copyZh: '複製',
+    downloadBtn: '下載 TXT (包含中英對照)',
+    loading: 'AI 正在深度解析圖片詳情...',
+    placeholderEn: '分析後的英文提示詞將顯示於此...',
+    placeholderZh: '中文翻譯將顯示於此...',
+    toastSuccess: '操作成功',
+    toastFormatError: '請上傳圖片檔案 (PNG, JPG, WEBP)',
+    toastAnalysisDone: '分析完成！',
+    toastGenerationDone: '提示詞生成成功！',
+    toastAnalysisError: '生成成功，但此式解析有異常',
+    toastCopySuccess: '已複製到剪貼簿',
+    toastCopyFail: '複製失敗',
+    toastDownload: '開始下載',
+    modalTitle: '使用說明',
+    modalContent: `<p>歡迎使用提示詞抓取器！</p>`
+  },
+  'en': {
+    help: 'Help',
+    themeLight: 'Light',
+    themeDark: 'Dark',
+    title: 'Prompt Grabber',
+    subtitle: 'Upload an image, and AI will automatically analyze and generate high-quality prompts.',
+    dropText: 'Click or drag image here',
+    dropSubText: 'Supports PNG, JPG, WEBP',
+    detailTitle: 'Enable "Detailed Description" Analysis',
+    detailSub: 'Deep analysis: Subject outline, clothing, action scene, and camera style.',
+    detailTooltip: '[Difference] Focuses on the "overall composition", ideal for generating story-driven complete scenes.',
+    facialTitle: 'Enable "Detailed Facial" Analysis',
+    facialSub: 'Deep analysis: Race, face shape, skin color, hair, eyes, facial features, and lips.',
+    facialTooltip: '[Difference] Focuses on extreme detailing of "facial features".',
+    analyzeBtn: 'Analyze Image',
+    enPrompt: 'English Prompt',
+    zhPrompt: 'Chinese Translation',
+    copyEn: 'Copy',
+    copyZh: 'Copy',
+    downloadBtn: 'Download TXT',
+    loading: 'AI is deeply analyzing the image...',
+    placeholderEn: 'The generated English prompt will appear here...',
+    placeholderZh: 'The Chinese translation will appear here...',
+    toastSuccess: 'Success',
+    toastFormatError: 'Please upload an image file (PNG, JPG, WEBP)',
+    toastAnalysisDone: 'Analysis Complete!',
+    toastGenerationDone: 'Prompt Generated Successfully!',
+    toastAnalysisError: 'Generated successfully, but parsing had minor issues.',
+    toastCopySuccess: 'Copied to clipboard',
+    toastCopyFail: 'Copy failed',
+    toastDownload: 'Downloading',
+    modalTitle: 'User Guide',
+    modalContent: `<p>Welcome to the Prompt Grabber!</p>`
+  }
+};
+
+function applyLanguage() {
+  const t = i18n[currentLang];
+  document.getElementById('i18n-help').textContent = t.help;
+  document.getElementById('themeText').textContent = isDarkMode ? t.themeLight : t.themeDark;
+  document.getElementById('i18n-title').textContent = t.title;
+  document.getElementById('i18n-subtitle').textContent = t.subtitle;
+  document.getElementById('i18n-dropText').textContent = t.dropText;
+  document.getElementById('i18n-dropSubText').textContent = t.dropSubText;
+  document.getElementById('i18n-detailTitle').textContent = t.detailTitle;
+  document.getElementById('i18n-detailSub').textContent = t.detailSub;
+  document.getElementById('i18n-detailTooltip').textContent = t.detailTooltip;
+  document.getElementById('i18n-facialTitle').textContent = t.facialTitle;
+  document.getElementById('i18n-facialSub').textContent = t.facialSub;
+  document.getElementById('i18n-facialTooltip').textContent = t.facialTooltip;
+  document.getElementById('i18n-analyzeBtn').textContent = t.analyzeBtn;
+  document.getElementById('i18n-enPrompt').textContent = t.enPrompt;
+  document.getElementById('i18n-zhPrompt').textContent = t.zhPrompt;
+  document.getElementById('i18n-copyEn').textContent = t.copyEn;
+  document.getElementById('i18n-copyZh').textContent = t.copyZh;
+  document.getElementById('i18n-downloadBtn').textContent = t.downloadBtn;
+  document.getElementById('i18n-loading').textContent = t.loading;
+  englishResult.placeholder = t.placeholderEn;
+  chineseResult.placeholder = t.placeholderZh;
+  document.getElementById('i18n-modalTitle').textContent = t.modalTitle;
+  document.getElementById('i18n-modalContent').innerHTML = t.modalContent;
+}
+
+langBtn.addEventListener('click', () => {
+  currentLang = currentLang === 'zh-TW' ? 'en' : 'zh-TW';
+  langText.textContent = currentLang === 'zh-TW' ? 'EN' : '中';
+  applyLanguage();
+});
+
+applyLanguage();
+
+// Theme Toggle
+themeBtn.addEventListener('click', () => {
+  isDarkMode = !isDarkMode;
+  if (isDarkMode) {
+    document.documentElement.classList.add('dark');
+    themeIcon.className = 'ph ph-sun text-yellow-400 text-lg';
+    themeText.textContent = i18n[currentLang].themeLight;
+  } else {
+    document.documentElement.classList.remove('dark');
+    themeIcon.className = 'ph ph-moon text-slate-500 text-lg';
+    themeText.textContent = i18n[currentLang].themeDark;
+  }
+});
+
+// Help Modal
+helpBtn.addEventListener('click', () => helpModal.classList.remove('hidden'));
+closeHelpBtn.addEventListener('click', () => helpModal.classList.add('hidden'));
+helpModal.addEventListener('click', (e) => {
+  if (e.target === helpModal) helpModal.classList.add('hidden');
+});
+
+// Drag & Drop Implementation
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+  dropZone.addEventListener(eventName, preventDefaults, false);
+});
+
+function preventDefaults(e) {
+  e.preventDefault();
+  e.stopPropagation();
+}
+
+['dragenter', 'dragover'].forEach(eventName => {
+  dropZone.addEventListener(eventName, () => dropZone.classList.add('drop-zone-active'), false);
+});
+
+['dragleave', 'drop'].forEach(eventName => {
+  dropZone.addEventListener(eventName, () => dropZone.classList.remove('drop-zone-active'), false);
+});
+
+dropZone.addEventListener('drop', (e) => {
+  const dt = e.dataTransfer;
+  const files = dt.files;
+  if (files.length > 0) handleFile(files[0]);
+});
+
+fileInput.addEventListener('change', function() {
+  if (this.files.length > 0) handleFile(this.files[0]);
+});
+
+function handleFile(file) {
+  if (!file.type.startsWith('image/')) {
+    showToast(i18n[currentLang].toastFormatError, 'error');
+    return;
+  }
+  currentMimeType = file.type;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    imagePreview.src = e.target.result;
+    imagePreview.classList.remove('hidden');
+    uploadPlaceholder.classList.add('hidden');
+    currentBase64 = e.target.result.split(',')[1];
+    analyzeBtn.disabled = false;
+    englishResult.value = '';
+    chineseResult.value = '';
+    copyEnBtn.disabled = true;
+    copyZhBtn.disabled = true;
+    downloadBtn.disabled = true;
+  }
+  reader.readAsDataURL(file);
+}
+
+// API & Retry Logic
+async function fetchWithRetry(url, options, maxRetries = 5) {
+  const delays = [1000, 2000, 4000, 8000, 16000];
+  for (let i = 0; i <= maxRetries; i++) {
+    try {
+      const response = await fetch(url, options);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error?.message || `HTTP Error: ${response.status}`);
+      }
+      return await response.json();
+    } catch (err) {
+      if (i === maxRetries) throw err;
+      await new Promise(resolve => setTimeout(resolve, delays[i]));
+    }
+  }
+}
+
+// Analysis Execution
+analyzeBtn.addEventListener('click', async () => {
+  if (!currentBase64 || !currentMimeType) return;
+  analyzeBtn.disabled = true;
+  loadingOverlay.classList.remove('hidden');
+  englishResult.value = '';
+  chineseResult.value = '';
+  copyEnBtn.disabled = true;
+  copyZhBtn.disabled = true;
+  downloadBtn.disabled = true;
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`;
+  
+  let promptText = "Please analyze this image in extreme detail and generate a highly descriptive, comprehensive text-to-image prompt (suitable for Midjourney or Stable Diffusion).\\n";
+  
+  let frameworks = [];
+  if (detailCheck.checked) {
+    frameworks.push(`- Subject/Character & Action/Pose (e.g., posture, gestures, interaction).\\n- Clothing/Accessories (e.g., dressing style, outfit, jewelry, props).\\n- Scene/Atmosphere (e.g., location, time, weather, environment decorations, lighting/shadows).\\n- Camera/Style (e.g., focal length, aperture, composition, shot type, style, viewing angle).`);
+  }
+  if (facialCheck.checked) {
+    frameworks.push(`- Detailed Facial Features (MUST include specific descriptive terms for: Race/Ethnicity, Face Shape, Skin Color, Hair Color/Style, Eye Shape, Pupil Color/Shape, Forehead, Cheeks, Chin, Ears, Nose Shape/Wings/Tip, Lips, Eyebrows).`);
+  }
+  
+  if (frameworks.length > 0) {
+    promptText += `YOU MUST strictly use the following framework to structure your prompt and provide rich, exhaustive details:\\n${frameworks.join('\\n')}\\n`;
+  } else {
+    promptText += `Focus strictly on the subject, action, lighting, camera angle, medium, style, and mood.\\n`;
+  }
+  
+  promptText += `The resulting prompt must be lengthy and highly descriptive to allow perfect recreation of the original image.\\nOutput ONLY a valid JSON object with two keys:\\n"english": "the highly detailed English prompt (comma separated keywords preferred)",\\n"chinese": "the Traditional Chinese translation of the prompt"\\nDo not include any other text or markdown formatting.`;
+  
+  const payload = {
+    contents: [{
+      role: "user",
+      parts: [
+        { text: promptText },
+        { inlineData: { mimeType: currentMimeType, data: currentBase64 } }
+      ]
+    }]
+  };
+  
+  try {
+    const data = await fetchWithRetry(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    
+    const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    
+    if (generatedText) {
+      try {
+        const cleanJson = generatedText.replace(/```json/g, '').replace(/```/g, '').trim();
+        const resultObj = JSON.parse(cleanJson);
+        englishResult.value = resultObj.english || '';
+        chineseResult.value = resultObj.chinese || '';
+        copyEnBtn.disabled = false;
+        copyZhBtn.disabled = false;
+        downloadBtn.disabled = false;
+        const msgKey = (detailCheck.checked || facialCheck.checked) ? 'toastAnalysisDone' : 'toastGenerationDone';
+        showToast(i18n[currentLang][msgKey], 'success');
+      } catch (e) {
+        englishResult.value = generatedText;
+        copyEnBtn.disabled = false;
+        downloadBtn.disabled = false;
+        showToast(i18n[currentLang].toastAnalysisError, 'success');
+      }
+    } else {
+      throw new Error("Cannot retrieve complete response from API.");
+    }
+  } catch (error) {
+    console.error("API Error:", error);
+    englishResult.value = `API Request Error:\\n${error.message}`;
+    showToast('Generation failed.', 'error');
+  } finally {
+    analyzeBtn.disabled = false;
+    loadingOverlay.classList.add('hidden');
+  }
+});
+
+// Clipboard & Download Functionality
+function copyToClipboard(text) {
+  const textArea = document.createElement("textarea");
+  textArea.value = text;
+  textArea.style.position = "fixed";
+  textArea.style.left = "-999999px";
+  textArea.style.top = "-999999px";
+  document.body.appendChild(textArea);
+  textArea.focus();
+  textArea.select();
+  try {
+    document.execCommand('copy');
+    showToast(i18n[currentLang].toastCopySuccess, 'success');
+  } catch (err) {
+    showToast(i18n[currentLang].toastCopyFail, 'error');
+  } finally {
+    textArea.remove();
+  }
+}
+
+copyEnBtn.addEventListener('click', () => {
+  if (englishResult.value) copyToClipboard(englishResult.value);
+});
+
+copyZhBtn.addEventListener('click', () => {
+  if (chineseResult.value) copyToClipboard(chineseResult.value);
+});
+
+downloadBtn.addEventListener('click', () => {
+  if (!englishResult.value) return;
+  const content = `【English Prompt】\\n${englishResult.value}\\n\\n【中文對照】\\n${chineseResult.value}`;
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Prompt_${new Date().getTime()}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  }, 0);
+  showToast(i18n[currentLang].toastDownload, 'success');
+});
+
+// Toast Notifications
+let toastTimeout;
+function showToast(message, type = 'success') {
+  toastMsg.textContent = message;
+  const icon = toast.querySelector('i');
+  if (type === 'success') {
+    icon.className = 'ph ph-check-circle text-green-400 dark:text-green-500 text-xl';
+  } else {
+    icon.className = 'ph ph-warning-circle text-red-400 dark:text-red-500 text-xl';
+  }
+  toast.classList.remove('opacity-0', 'translate-y-4');
+  toast.classList.add('opacity-100', 'translate-y-0');
+  clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => {
+    toast.classList.remove('opacity-100', 'translate-y-0');
+    toast.classList.add('opacity-0', 'translate-y-4');
+  }, 3000);
+}
+</script>
+</body>
+</html>
