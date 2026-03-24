@@ -1,536 +1,867 @@
 <!DOCTYPE html>
 <html lang="zh-TW" class="dark">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>提示詞抓取器 (Prompt Grabber)</title>
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Phosphor Icons -->
-  <script src="https://unpkg.com/@phosphor-icons/web"></script>
-  <style>
-    /* 自定義捲動欄 */
-    ::-webkit-scrollbar { width: 8px; height: 8px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-    .dark ::-webkit-scrollbar-thumb { background: #475569; }
-    .dark ::-webkit-scrollbar-thumb:hover { background: #64748b; }
-
-    .drop-zone-active {
-      border-color: #3b82f6 !important;
-      background-color: #eff6ff !important;
-    }
-    .dark .drop-zone-active {
-      background-color: rgba(59, 130, 246, 0.1) !important;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>提示詞抓取器 (Prompt Grabber)</title>
+    <!-- 引入 Tailwind CSS 進行快速、現代化的樣式設計 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class', // 啟用基於 class 的暗色模式
+            theme: {
+                extend: {
+                    fontFamily: {
+                        // 套用微軟正黑體 UI (Microsoft JhengHei UI)
+                        sans: ['"Microsoft JhengHei UI"', '"Microsoft JhengHei"', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            bg: '#E0DED8',
+                            card: '#F5F4F2',
+                            border: '#8B7979',
+                            main: '#1A1A1A',
+                            sub: '#6B6B6B',
+                            link: '#245B61',
+                            primary: '#0F5E67',
+                            secondary: '#3ABACB',
+                            accent: '#D9A940',
+                            positive: '#279042',
+                            negative: '#DD5A5A'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- 引入 Phosphor Icons 作為按鈕圖示 -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        /* 自訂捲軸樣式 */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+        .dark ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        
+        .drop-zone-active {
+            border-color: #3b82f6 !important;
+            background-color: #eff6ff !important;
+        }
+        .dark .drop-zone-active {
+            background-color: rgba(59, 130, 246, 0.1) !important;
+        }
+    </style>
 </head>
-<body class="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 min-h-screen transition-colors duration-300">
+<body class="bg-brand-bg dark:bg-slate-900 min-h-screen text-brand-main dark:text-slate-200 font-sans p-4 md:p-8 flex flex-col items-center justify-start transition-colors duration-300">
 
-<div class="max-w-5xl mx-auto p-6 space-y-6">
-  <!-- Header -->
-  <header class="flex items-center justify-between">
-    <div>
-      <h1 id="i18n-title" class="text-3xl font-bold text-slate-800 dark:text-white">提示詞抓取器</h1>
-      <p id="i18n-subtitle" class="text-sm text-slate-600 dark:text-slate-400 mt-1">上傳圖片，AI 將自動為你解析並生成高質量的繪圖提示詞。</p>
-    </div>
-    <div class="flex gap-2">
-      <button id="themeBtn" class="px-3 py-2 rounded-lg bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 shadow transition flex items-center gap-2">
-        <i id="themeIcon" class="ph ph-sun text-yellow-400 text-lg"></i>
-        <span id="themeText" class="text-sm text-slate-700 dark:text-slate-300">亮色</span>
-      </button>
-      <button id="langBtn" class="px-3 py-2 rounded-lg bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 shadow transition text-sm font-semibold text-slate-700 dark:text-slate-300">
-        <span id="langText">EN</span>
-      </button>
-      <button id="helpBtn" class="px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 shadow transition text-white text-sm font-semibold flex items-center gap-1">
-        <i class="ph ph-question"></i> <span id="i18n-help">說明</span>
-      </button>
-    </div>
-  </header>
-
-  <!-- Upload Zone -->
-  <div id="dropZone" class="relative border-4 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-12 text-center cursor-pointer bg-white dark:bg-slate-800/50 hover:border-blue-400 dark:hover:border-blue-500 transition">
-    <input type="file" id="fileInput" accept="image/png, image/jpeg, image/webp, image/heic" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
-    <div id="uploadPlaceholder" class="space-y-2">
-      <i class="ph ph-image text-6xl text-slate-400 dark:text-slate-500"></i>
-      <p id="i18n-dropText" class="text-lg font-medium text-slate-700 dark:text-slate-300">點擊或拖曳圖片至此</p>
-      <p id="i18n-dropSubText" class="text-sm text-slate-500 dark:text-slate-400">支援 PNG, JPG, WEBP</p>
-    </div>
-    <img id="imagePreview" class="hidden max-w-full max-h-96 mx-auto rounded-lg shadow" alt="Preview Image">
-  </div>
-
-  <!-- Options -->
-  <div class="grid md:grid-cols-2 gap-4">
-    <div class="bg-white dark:bg-slate-800 p-4 rounded-lg shadow space-y-2">
-      <div class="flex items-start gap-3">
-        <input type="checkbox" id="detailCheck" class="mt-1 rounded text-blue-600 focus:ring-blue-500 bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 w-4 h-4 cursor-pointer">
-        <div class="flex-1">
-          <label for="detailCheck" class="cursor-pointer">
-            <p id="i18n-detailTitle" class="font-semibold text-slate-800 dark:text-white">啟用「詳細描述」層次分析</p>
-            <p id="i18n-detailSub" class="text-xs text-slate-600 dark:text-slate-400 mt-1">深度解析：主體輪廈、服裝配件、動作場景與鏡頭風格</p>
-          </label>
-          <p id="i18n-detailTooltip" class="text-xs text-blue-600 dark:text-blue-400 mt-2">【差異說明】側重於「整體畫面」的批批，適合生成具有故事性的完整場景，與詳詳詳証的更可以加使用。</p>
+    <div class="max-w-4xl w-full bg-brand-card dark:bg-slate-800 rounded-2xl shadow-sm border border-brand-border dark:border-slate-700 p-6 md:p-8 relative">
+        
+        <!-- 右上角工具列 (說明 & 日夜切換 & 語系切換) -->
+        <div class="absolute top-4 right-4 flex gap-2">
+            <button id="langBtn" class="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-brand-main dark:text-slate-200 border border-brand-border dark:border-slate-600 rounded-full hover:bg-brand-bg dark:hover:bg-slate-700 transition-colors">
+                <i class="ph ph-translate text-brand-positive text-lg"></i> <span id="langText">EN</span>
+            </button>
+            <button id="helpBtn" class="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-brand-main dark:text-slate-200 border border-brand-border dark:border-slate-600 rounded-full hover:bg-brand-bg dark:hover:bg-slate-700 transition-colors">
+                <i class="ph ph-book-open text-brand-primary text-lg"></i> <span id="i18n-help">說明</span>
+            </button>
+            <button id="themeBtn" class="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-brand-main dark:text-slate-200 border border-brand-border dark:border-slate-600 rounded-full hover:bg-brand-bg dark:hover:bg-slate-700 transition-colors">
+                <i class="ph ph-sun text-brand-accent text-lg" id="themeIcon"></i> <span id="themeText">亮色</span>
+            </button>
         </div>
-      </div>
-    </div>
-    <div class="bg-white dark:bg-slate-800 p-4 rounded-lg shadow space-y-2">
-      <div class="flex items-start gap-3">
-        <input type="checkbox" id="facialCheck" class="mt-1 rounded text-blue-600 focus:ring-blue-500 bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 w-4 h-4 cursor-pointer">
-        <div class="flex-1">
-          <label for="facialCheck" class="cursor-pointer">
-            <p id="i18n-facialTitle" class="font-semibold text-slate-800 dark:text-white">啟用「詳詳場」特層分析</p>
-            <p id="i18n-facialSub" class="text-xs text-slate-600 dark:text-slate-400 mt-1">深度解析：人種、臉型、膚色、髮型/色、眼睛/瞳孔、鼻頭、臉頌、下巴、耳朵、鬢型/鬢習/鬢尖、唇形與眉毛</p>
-          </label>
-          <p id="i18n-facialTooltip" class="text-xs text-blue-600 dark:text-blue-400 mt-2">【差異說明】側重於「臉部特徵」的極度詳細，適合生成特層人物肘像，或需要精細控制臉部時使用。</p>
+
+        <!-- 標題區 -->
+        <header class="text-center mb-8 mt-12 md:mt-4 md:mb-8 flex flex-col items-center">
+            <img src="https://upload.cc/i1/2026/01/29/BauOeN.png" alt="CIS Logo" class="h-16 mb-4 object-contain">
+            <h1 class="text-3xl font-bold text-brand-primary dark:text-white flex items-center justify-center gap-2">
+                <span id="i18n-title">提示詞抓取器</span>
+            </h1>
+            <p id="i18n-subtitle" class="text-brand-sub dark:text-slate-400 mt-2 text-sm md:text-base">上傳圖片，AI 將自動為您解析並生成高質量的繪圖提示詞。</p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            
+            <!-- 左側：上傳與預覽區 -->
+            <div class="flex flex-col gap-4">
+                
+                <!-- 拖曳上傳區 -->
+                <div id="dropZone" class="relative border-2 border-dashed border-brand-border dark:border-slate-600 rounded-xl p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-brand-bg dark:hover:bg-slate-700/50 transition-colors h-64 group">
+                    <input type="file" id="fileInput" accept="image/png, image/jpeg, image/webp, image/heic" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                    
+                    <div id="uploadPlaceholder" class="flex flex-col items-center pointer-events-none">
+                        <i class="ph ph-upload-simple text-4xl text-brand-sub dark:text-slate-500 group-hover:text-brand-primary transition-colors mb-3"></i>
+                        <span id="i18n-dropText" class="font-medium text-brand-main dark:text-slate-300">點擊或拖曳圖片至此</span>
+                        <span id="i18n-dropSubText" class="text-sm text-brand-sub dark:text-slate-500 mt-1">支援 PNG, JPG, WEBP</span>
+                    </div>
+
+                    <!-- 圖片預覽 (初始隱藏) -->
+                    <img id="imagePreview" class="absolute inset-0 w-full h-full object-contain p-2 hidden rounded-xl" alt="Preview Image">
+                </div>
+
+                <!-- 深度分析選項 -->
+                <div class="bg-brand-bg dark:bg-slate-900 border border-brand-border dark:border-slate-700 p-4 rounded-xl flex flex-col gap-3">
+                    <label class="flex items-start gap-3 cursor-pointer group/card relative p-1">
+                        <input type="checkbox" id="detailCheck" class="mt-1 rounded text-brand-primary focus:ring-brand-primary bg-brand-card dark:bg-slate-700 border-brand-border dark:border-slate-600 w-4 h-4 cursor-pointer">
+                        <div class="flex flex-col">
+                            <div class="flex items-center gap-1.5">
+                                <span id="i18n-detailTitle" class="text-sm font-medium text-brand-main dark:text-slate-200 group-hover/card:text-brand-primary dark:group-hover/card:text-blue-400 transition-colors">啟用「細節描述」完整分析</span>
+                                <i class="ph ph-info text-brand-sub group-hover/card:text-brand-primary transition-colors"></i>
+                            </div>
+                            <span id="i18n-detailSub" class="text-xs text-brand-sub dark:text-slate-400 mt-1">深度解析：主體輪廓、服裝配件、動作場景與鏡頭風格</span>
+                        </div>
+                        <!-- Tooltip -->
+                        <div class="absolute z-50 left-8 top-full mt-1 invisible opacity-0 group-hover/card:visible group-hover/card:opacity-100 transition-all duration-300 w-64 bg-brand-primary dark:bg-slate-100 text-white dark:text-slate-800 text-xs rounded-lg p-3 shadow-xl pointer-events-none">
+                            <div class="absolute -top-1 left-4 w-2 h-2 bg-brand-primary dark:bg-slate-100 rotate-45"></div>
+                            <span id="i18n-detailTooltip">【差異說明】側重於「整體畫面」的建構，適合生成具有故事性的完整場景，與詳細五官選項可疊加使用。</span>
+                        </div>
+                    </label>
+                    
+                    <div class="w-full h-px bg-brand-border/30 dark:bg-slate-700"></div>
+
+                    <label class="flex items-start gap-3 cursor-pointer group/card relative p-1">
+                        <input type="checkbox" id="facialCheck" class="mt-1 rounded text-brand-primary focus:ring-brand-primary bg-brand-card dark:bg-slate-700 border-brand-border dark:border-slate-600 w-4 h-4 cursor-pointer">
+                        <div class="flex flex-col">
+                            <div class="flex items-center gap-1.5">
+                                <span id="i18n-facialTitle" class="text-sm font-medium text-brand-main dark:text-slate-200 group-hover/card:text-brand-primary dark:group-hover/card:text-blue-400 transition-colors">啟用「詳細五官」特寫分析</span>
+                                <i class="ph ph-info text-brand-sub group-hover/card:text-brand-primary transition-colors"></i>
+                            </div>
+                            <span id="i18n-facialSub" class="text-xs text-brand-sub dark:text-slate-400 mt-1">深度解析：人種、臉型、膚色、髮型/色、眼型/瞳孔、額頭、臉頰、下巴、耳朵、鼻型/鼻翼/鼻尖、唇形與眉毛</span>
+                        </div>
+                        <!-- Tooltip -->
+                        <div class="absolute z-50 left-8 top-full mt-1 invisible opacity-0 group-hover/card:visible group-hover/card:opacity-100 transition-all duration-300 w-64 bg-brand-primary dark:bg-slate-100 text-white dark:text-slate-800 text-xs rounded-lg p-3 shadow-xl pointer-events-none">
+                            <div class="absolute -top-1 left-4 w-2 h-2 bg-brand-primary dark:bg-slate-100 rotate-45"></div>
+                            <span id="i18n-facialTooltip">【差異說明】側重於「臉部特徵」的極度細化，適合生成特寫人物肖像，或需要精確控制長相時使用。</span>
+                        </div>
+                    </label>
+                </div>
+
+                <!-- 快速風格模板區塊 -->
+                <div class="bg-brand-bg dark:bg-slate-900 border border-brand-border dark:border-slate-700 p-4 rounded-xl flex flex-col gap-3">
+                    <div class="flex items-center gap-1.5 mb-1">
+                        <i class="ph ph-lightning text-brand-accent text-lg"></i>
+                        <span id="i18n-tplTitle" class="text-sm font-bold text-brand-main dark:text-slate-200">快速風格模板</span>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <button class="tpl-btn px-3 py-1.5 text-xs font-medium bg-brand-card dark:bg-slate-800 border border-brand-border dark:border-slate-600 rounded-lg hover:bg-brand-bg dark:hover:bg-slate-700 hover:border-brand-primary dark:hover:border-blue-500 transition-colors text-brand-main dark:text-slate-200 shadow-sm" data-tpl="ecommerce"><span id="i18n-tpl1">電商產品主圖</span></button>
+                        <button class="tpl-btn px-3 py-1.5 text-xs font-medium bg-brand-card dark:bg-slate-800 border border-brand-border dark:border-slate-600 rounded-lg hover:bg-brand-bg dark:hover:bg-slate-700 hover:border-brand-primary dark:hover:border-blue-500 transition-colors text-brand-main dark:text-slate-200 shadow-sm" data-tpl="social"><span id="i18n-tpl2">社群媒體情境</span></button>
+                        <button class="tpl-btn px-3 py-1.5 text-xs font-medium bg-brand-card dark:bg-slate-800 border border-brand-border dark:border-slate-600 rounded-lg hover:bg-brand-bg dark:hover:bg-slate-700 hover:border-brand-primary dark:hover:border-blue-500 transition-colors text-brand-main dark:text-slate-200 shadow-sm" data-tpl="tech"><span id="i18n-tpl3">前衛科技發佈</span></button>
+                        <button class="tpl-btn px-3 py-1.5 text-xs font-medium bg-brand-card dark:bg-slate-800 border border-brand-border dark:border-slate-600 rounded-lg hover:bg-brand-bg dark:hover:bg-slate-700 hover:border-brand-primary dark:hover:border-blue-500 transition-colors text-brand-main dark:text-slate-200 shadow-sm" data-tpl="minimal"><span id="i18n-tpl4">高階極簡型錄</span></button>
+                        <button class="tpl-btn px-3 py-1.5 text-xs font-medium bg-brand-card dark:bg-slate-800 border border-brand-border dark:border-slate-600 rounded-lg hover:bg-brand-bg dark:hover:bg-slate-700 hover:border-brand-primary dark:hover:border-blue-500 transition-colors text-brand-main dark:text-slate-200 shadow-sm" data-tpl="b2b"><span id="i18n-tpl5">B2B工程圖解</span></button>
+                    </div>
+                </div>
+
+                <!-- 進階提示詞優化區塊 -->
+                <div class="bg-brand-bg dark:bg-slate-900 border border-brand-border dark:border-slate-700 p-4 rounded-xl flex flex-col gap-3">
+                    <div class="flex items-center gap-1.5 mb-1">
+                        <i class="ph ph-sliders-horizontal text-brand-primary text-lg"></i>
+                        <span id="i18n-advTitle" class="text-sm font-bold text-brand-main dark:text-slate-200">進階提示詞優化</span>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-3 text-sm">
+                        <!-- 畫面比例 -->
+                        <div class="flex flex-col gap-1">
+                            <label id="i18n-optRatio" class="text-xs text-brand-sub dark:text-slate-400 font-medium">畫面比例</label>
+                            <select id="advRatio" class="p-2 rounded-lg bg-brand-card dark:bg-slate-800 border border-brand-border dark:border-slate-600 text-brand-main dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-brand-primary">
+                                <option value="" id="optAutoRatio">預設 (Auto)</option>
+                                <option value="--ar 1:1">1:1 (Square)</option>
+                                <option value="--ar 16:9">16:9 (Landscape)</option>
+                                <option value="--ar 9:16">9:16 (Portrait)</option>
+                                <option value="--ar 4:3">4:3 (Classic)</option>
+                                <option value="--ar 3:4">3:4 (Photo)</option>
+                            </select>
+                        </div>
+                        
+                        <!-- 藝術風格 -->
+                        <div class="flex flex-col gap-1">
+                            <label id="i18n-optStyle" class="text-xs text-brand-sub dark:text-slate-400 font-medium">藝術風格</label>
+                            <select id="advStyle" class="p-2 rounded-lg bg-brand-card dark:bg-slate-800 border border-brand-border dark:border-slate-600 text-brand-main dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-brand-primary">
+                                <option value="" id="optAutoStyle">預設 (Auto)</option>
+                                <option value="photo" id="i18n-optStylePhoto">極致擬真 (Photorealistic)</option>
+                                <option value="3d" id="i18n-optStyle3D">3D渲染 (3D Render)</option>
+                                <option value="cine" id="i18n-optStyleCine">電影感 (Cinematic)</option>
+                                <option value="anime" id="i18n-optStyleAnime">動漫風 (Anime)</option>
+                            </select>
+                        </div>
+
+                        <!-- 光影氛圍 -->
+                        <div class="flex flex-col gap-1">
+                            <label id="i18n-optLight" class="text-xs text-brand-sub dark:text-slate-400 font-medium">光影氛圍</label>
+                            <select id="advLight" class="p-2 rounded-lg bg-brand-card dark:bg-slate-800 border border-brand-border dark:border-slate-600 text-brand-main dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-brand-primary">
+                                <option value="" id="optAutoLight">預設 (Auto)</option>
+                                <option value="studio" id="i18n-optLightStudio">攝影棚打光 (Studio)</option>
+                                <option value="cine" id="i18n-optLightCine">電影光 (Cinematic)</option>
+                                <option value="golden" id="i18n-optLightGolden">黃金時刻 (Golden Hour)</option>
+                                <option value="vol" id="i18n-optLightVol">體積光 (Volumetric)</option>
+                            </select>
+                        </div>
+
+                        <!-- 鏡頭視角 -->
+                        <div class="flex flex-col gap-1">
+                            <label id="i18n-optCam" class="text-xs text-brand-sub dark:text-slate-400 font-medium">鏡頭視角</label>
+                            <select id="advCam" class="p-2 rounded-lg bg-brand-card dark:bg-slate-800 border border-brand-border dark:border-slate-600 text-brand-main dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-brand-primary">
+                                <option value="" id="optAutoCam">預設 (Auto)</option>
+                                <option value="macro" id="i18n-optCamMacro">特寫/微距 (Macro)</option>
+                                <option value="wide" id="i18n-optCamWide">廣角 (Wide Angle)</option>
+                                <option value="iso" id="i18n-optCamIso">等距視角 (Isometric)</option>
+                            </select>
+                        </div>
+
+                        <!-- 色調美學 -->
+                        <div class="flex flex-col gap-1 col-span-2">
+                            <label id="i18n-optColor" class="text-xs text-brand-sub dark:text-slate-400 font-medium">色調美學</label>
+                            <select id="advColor" class="p-2 rounded-lg bg-brand-card dark:bg-slate-800 border border-brand-border dark:border-slate-600 text-brand-main dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-brand-primary">
+                                <option value="" id="optAutoColor">預設 (Auto)</option>
+                                <option value="neon" id="i18n-optColorNeon">霓虹/賽博龐克 (Cyberpunk)</option>
+                                <option value="pastel" id="i18n-optColorPastel">柔和粉色 (Pastel)</option>
+                                <option value="mono" id="i18n-optColorMono">單色調 (Monochromatic)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="analyzeBtn" disabled class="w-full bg-brand-primary hover:bg-brand-secondary disabled:bg-brand-border dark:disabled:bg-slate-700 disabled:text-brand-sub disabled:cursor-not-allowed text-white font-medium py-3 px-6 rounded-xl transition-all flex items-center justify-center gap-2">
+                    <i class="ph ph-scan text-xl"></i>
+                    <span id="i18n-analyzeBtn">分析圖片</span>
+                </button>
+            </div>
+
+            <!-- 右側：結果區 -->
+            <div class="flex flex-col h-full relative gap-4">
+                
+                <!-- 英文結果區 -->
+                <div class="flex flex-col flex-1 relative">
+                    <label class="font-medium text-brand-main dark:text-slate-300 mb-2 flex items-center justify-between">
+                        <span class="flex items-center gap-2"><i class="ph ph-text-align-left text-brand-primary"></i> <span id="i18n-enPrompt">英文提示詞</span></span>
+                        <button id="copyEnBtn" disabled class="text-sm text-brand-link hover:text-brand-secondary dark:text-blue-400 dark:hover:text-blue-300 disabled:text-brand-sub dark:disabled:text-slate-600 flex items-center gap-1 transition-colors"><i class="ph ph-copy"></i> <span id="i18n-copyEn">複製</span></button>
+                    </label>
+                    <textarea id="englishResult" readonly placeholder="..." class="w-full flex-grow min-h-[120px] p-4 bg-brand-bg dark:bg-slate-900 border border-brand-border dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary resize-none text-brand-main dark:text-slate-300 text-sm leading-relaxed"></textarea>
+                </div>
+
+                <!-- 中文對照區 -->
+                <div class="flex flex-col flex-1 relative">
+                    <label class="font-medium text-brand-main dark:text-slate-300 mb-2 flex items-center justify-between">
+                        <span class="flex items-center gap-2"><i class="ph ph-translate text-brand-primary"></i> <span id="i18n-zhPrompt">中文對照</span></span>
+                        <button id="copyZhBtn" disabled class="text-sm text-brand-link hover:text-brand-secondary dark:text-blue-400 dark:hover:text-blue-300 disabled:text-brand-sub dark:disabled:text-slate-600 flex items-center gap-1 transition-colors"><i class="ph ph-copy"></i> <span id="i18n-copyZh">複製</span></button>
+                    </label>
+                    <textarea id="chineseResult" readonly placeholder="..." class="w-full flex-grow min-h-[120px] p-4 bg-brand-bg dark:bg-slate-900 border border-brand-border dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary resize-none text-brand-main dark:text-slate-300 text-sm leading-relaxed"></textarea>
+                </div>
+                
+                <!-- 載入中遮罩 -->
+                <div id="loadingOverlay" class="absolute inset-0 bg-brand-card/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-xl hidden flex-col items-center justify-center border border-brand-border dark:border-slate-700 z-20">
+                    <i class="ph ph-spinner-gap animate-spin text-4xl text-brand-primary mb-3"></i>
+                    <p id="i18n-loading" class="text-brand-sub dark:text-slate-300 font-medium animate-pulse">AI 正在深度解析圖片細節...</p>
+                </div>
+
+                <!-- 下載按鈕 -->
+                <div class="flex flex-col mt-2">
+                    <button id="downloadBtn" disabled class="w-full bg-brand-bg dark:bg-slate-700 hover:bg-brand-border/20 dark:hover:bg-slate-600 disabled:bg-brand-bg dark:disabled:bg-slate-800 disabled:text-brand-sub dark:disabled:text-slate-600 disabled:cursor-not-allowed text-brand-main dark:text-slate-200 font-medium py-3 px-4 rounded-xl transition-colors flex items-center justify-center border border-brand-border gap-2">
+                        <i class="ph ph-download-simple text-lg"></i>
+                        <span id="i18n-downloadBtn">下載 TXT (含中英對照)</span>
+                    </button>
+                </div>
+            </div>
+
         </div>
-      </div>
     </div>
-  </div>
 
-  <!-- Analyze Button -->
-  <div class="text-center">
-    <button id="analyzeBtn" disabled class="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-slate-400 disabled:to-slate-500 text-white font-bold rounded-lg shadow-lg transition transform hover:scale-105 disabled:scale-100 disabled:cursor-not-allowed">
-      <i class="ph ph-sparkle"></i> <span id="i18n-analyzeBtn">分析圖片</span>
-    </button>
-  </div>
+    <!-- 版權頁尾 -->
+    <footer class="mt-8 text-center text-sm text-brand-sub dark:text-slate-400 pb-4">
+        v0.0.9 | &copy; 2026 <span class="font-medium text-brand-main dark:text-slate-300">BSD_Homemade</span>
+    </footer>
 
-  <!-- Results -->
-  <div class="grid md:grid-cols-2 gap-4">
-    <div class="bg-white dark:bg-slate-800 p-4 rounded-lg shadow">
-      <div class="flex justify-between items-center mb-2">
-        <h3 id="i18n-enPrompt" class="font-semibold text-slate-800 dark:text-white">英文提示詞</h3>
-        <button id="copyEnBtn" disabled class="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-slate-400 text-white rounded transition">
-          <i class="ph ph-copy"></i> <span id="i18n-copyEn">複製</span>
-        </button>
-      </div>
-      <textarea id="englishResult" readonly class="w-full h-64 p-3 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-800 dark:text-slate-200 resize-none" placeholder="分析後的英文提示詞將顯示於此..."></textarea>
+    <!-- 說明視窗 Modal -->
+    <div id="helpModal" class="fixed inset-0 z-50 hidden bg-brand-main/50 backdrop-blur-sm flex items-center justify-center p-4 transition-opacity">
+        <div class="bg-brand-card dark:bg-slate-800 rounded-2xl shadow-xl max-w-lg w-full p-6 relative border border-brand-border dark:border-slate-700 max-h-[90vh] overflow-y-auto">
+            <button id="closeHelpBtn" class="absolute top-4 right-4 text-brand-sub hover:text-brand-main dark:hover:text-slate-200 transition-colors">
+                <i class="ph ph-x text-2xl"></i>
+            </button>
+            <h2 class="text-2xl font-bold text-brand-main dark:text-white mb-4 flex items-center gap-2">
+                <i class="ph ph-book-open text-brand-primary"></i> <span id="i18n-modalTitle">使用說明</span>
+            </h2>
+            <div id="i18n-modalContent" class="space-y-4 text-brand-sub dark:text-slate-300 text-sm leading-relaxed">
+                <!-- 內容由 JS 動態載入以支援多國語系 -->
+            </div>
+        </div>
     </div>
-    <div class="bg-white dark:bg-slate-800 p-4 rounded-lg shadow">
-      <div class="flex justify-between items-center mb-2">
-        <h3 id="i18n-zhPrompt" class="font-semibold text-slate-800 dark:text-white">中文對照</h3>
-        <button id="copyZhBtn" disabled class="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-slate-400 text-white rounded transition">
-          <i class="ph ph-copy"></i> <span id="i18n-copyZh">複製</span>
-        </button>
-      </div>
-      <textarea id="chineseResult" readonly class="w-full h-64 p-3 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-800 dark:text-slate-200 resize-none" placeholder="中文翻譯將顯示於此..."></textarea>
+
+    <!-- 訊息提示彈窗 -->
+    <div id="toast" class="fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-slate-800 dark:bg-white text-white dark:text-slate-800 px-6 py-3 rounded-full shadow-lg transition-all duration-300 opacity-0 translate-y-4 pointer-events-none flex items-center gap-2 z-50">
+        <i class="ph ph-check-circle text-green-400 text-xl"></i>
+        <span id="toastMsg" class="font-medium">操作成功</span>
     </div>
-  </div>
 
-  <!-- Download Button -->
-  <div class="text-center">
-    <button id="downloadBtn" disabled class="px-6 py-2 bg-green-600 hover:bg-green-700 disabled:bg-slate-400 text-white font-semibold rounded-lg shadow transition">
-      <i class="ph ph-download"></i> <span id="i18n-downloadBtn">下載 TXT (包含中英對照)</span>
-    </button>
-  </div>
-</div>
+    <script>
+        // DOM Elements
+        const fileInput = document.getElementById('fileInput');
+        const dropZone = document.getElementById('dropZone');
+        const uploadPlaceholder = document.getElementById('uploadPlaceholder');
+        const imagePreview = document.getElementById('imagePreview');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const detailCheck = document.getElementById('detailCheck');
+        const facialCheck = document.getElementById('facialCheck');
+        const englishResult = document.getElementById('englishResult');
+        const chineseResult = document.getElementById('chineseResult');
+        const copyEnBtn = document.getElementById('copyEnBtn');
+        const copyZhBtn = document.getElementById('copyZhBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        
+        // Modal & Theme & Lang Elements
+        const themeBtn = document.getElementById('themeBtn');
+        const themeIcon = document.getElementById('themeIcon');
+        const themeText = document.getElementById('themeText');
+        const langBtn = document.getElementById('langBtn');
+        const langText = document.getElementById('langText');
+        const helpBtn = document.getElementById('helpBtn');
+        const helpModal = document.getElementById('helpModal');
+        const closeHelpBtn = document.getElementById('closeHelpBtn');
+        
+        // Toast Elements
+        const toast = document.getElementById('toast');
+        const toastMsg = document.getElementById('toastMsg');
 
-<!-- Loading Overlay -->
-<div id="loadingOverlay" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
-  <div class="bg-white dark:bg-slate-800 p-8 rounded-xl shadow-2xl text-center space-y-4">
-    <i class="ph ph-circle-notch animate-spin text-5xl text-blue-600"></i>
-    <p id="i18n-loading" class="text-lg font-semibold text-slate-800 dark:text-white">AI 正在深度解析圖片詳情...</p>
-  </div>
-</div>
+        // State variables
+        let currentBase64 = null;
+        let currentMimeType = null;
+        let isDarkMode = true;
+        let currentLang = 'zh-TW';
+        const apiKey = ""; // API Key 
 
-<!-- Toast Notification -->
-<div id="toast" class="fixed bottom-6 right-6 bg-white dark:bg-slate-800 px-6 py-4 rounded-lg shadow-2xl flex items-center gap-3 opacity-0 translate-y-4 transition-all duration-300 z-50">
-  <i class="ph ph-check-circle text-green-400 dark:text-green-500 text-xl"></i>
-  <span id="toastMsg" class="text-slate-800 dark:text-white font-medium"></span>
-</div>
+        // i18n Dictionary
+        const i18n = {
+            'zh-TW': {
+                help: '說明',
+                themeLight: '亮色',
+                themeDark: '暗色',
+                title: '提示詞抓取器',
+                subtitle: '上傳圖片，AI 將自動為您解析並生成高質量的繪圖提示詞。',
+                dropText: '點擊或拖曳圖片至此',
+                dropSubText: '支援 PNG, JPG, WEBP',
+                detailTitle: '啟用「細節描述」完整分析',
+                detailSub: '深度解析：主體輪廓、服裝配件、動作場景與鏡頭風格',
+                detailTooltip: '【差異說明】側重於「整體畫面」的建構，適合生成具有故事性的完整場景，與詳細五官選項可疊加使用。',
+                facialTitle: '啟用「詳細五官」特寫分析',
+                facialSub: '深度解析：人種、臉型、膚色、髮型/色、眼型/瞳孔、額頭、臉頰、下巴、耳朵、鼻型/鼻翼/鼻尖、唇形與眉毛',
+                facialTooltip: '【差異說明】側重於「臉部特徵」的極度細化，適合生成特寫人物肖像，或需要精確控制長相時使用。',
+                tplTitle: '快速風格模板',
+                tpl1: '電商產品主圖',
+                tpl2: '社群媒體情境',
+                tpl3: '前衛科技發佈',
+                tpl4: '高階極簡型錄',
+                tpl5: 'B2B工程圖解',
+                advTitle: '進階提示詞優化',
+                optAuto: '預設 (Auto)',
+                optRatio: '畫面比例',
+                optStyle: '藝術風格',
+                optStylePhoto: '極致擬真 (Photorealistic)',
+                optStyle3D: '3D渲染 (3D Render)',
+                optStyleCine: '電影感 (Cinematic)',
+                optStyleAnime: '動漫風 (Anime)',
+                optLight: '光影氛圍',
+                optLightStudio: '攝影棚打光 (Studio Lighting)',
+                optLightCine: '電影光 (Cinematic Lighting)',
+                optLightGolden: '黃金時刻 (Golden Hour)',
+                optLightVol: '體積光 (Volumetric Lighting)',
+                optCam: '鏡頭視角',
+                optCamMacro: '特寫/微距 (Macro Lens)',
+                optCamWide: '廣角 (Wide Angle)',
+                optCamIso: '等距視角 (Isometric)',
+                optColor: '色調美學',
+                optColorNeon: '霓虹/賽博龐克 (Cyberpunk)',
+                optColorPastel: '柔和粉色 (Pastel)',
+                optColorMono: '單色調 (Monochromatic)',
+                analyzeBtn: '分析圖片',
+                enPrompt: '英文提示詞',
+                zhPrompt: '中文對照',
+                copyEn: '複製',
+                copyZh: '複製',
+                downloadBtn: '下載 TXT (含中英對照)',
+                loading: 'AI 正在深度解析圖片細節...',
+                placeholderEn: '分析後的英文提示詞將顯示於此...',
+                placeholderZh: '中文翻譯將顯示於此...',
+                toastSuccess: '操作成功',
+                toastFormatError: '請上傳圖片檔案 (PNG, JPG, WEBP)',
+                toastAnalysisDone: '分析完成！',
+                toastGenerationDone: '提示詞生成成功！',
+                toastAnalysisError: '生成成功，但格式解析有瑕疵',
+                toastTplApplied: '已套用模板配置',
+                toastCopySuccess: '已複製到剪貼簿',
+                toastCopyFail: '複製失敗',
+                toastDownload: '開始下載',
+                modalTitle: '使用說明',
+                modalContent: `
+                    <p>歡迎使用提示詞抓取器！這是一個能將任何圖片反推為高品質繪圖提示詞（Prompt）的工具。</p>
+                    <ul class="list-disc pl-5 space-y-2">
+                        <li><strong>上傳圖片：</strong>支援點擊上傳或直接將圖片拖曳至虛線框內。</li>
+                        <li><strong>一般分析：</strong>AI 會快速抓取圖片的核心主體與風格。</li>
+                        <li><strong>細節描述功能：</strong>採用極其嚴謹的五大框架進行深度解析：主體、服裝、動作、場景、鏡頭。</li>
+                        <li><strong>詳細五官功能：</strong>極度細化人物面部特徵，包含人種、臉型、五官細節等。</li>
+                        <li><strong>一鍵複製與下載：</strong>生成完成後，可以直接複製英文餵給 Banana/Midjourney 等工具，或下載成 TXT 文件收藏。</li>
+                    </ul>
+                `
+            },
+            'en': {
+                help: 'Help',
+                themeLight: 'Light',
+                themeDark: 'Dark',
+                title: 'Prompt Grabber',
+                subtitle: 'Upload an image, and AI will automatically analyze and generate high-quality prompts.',
+                dropText: 'Click or drag image here',
+                dropSubText: 'Supports PNG, JPG, WEBP',
+                detailTitle: 'Enable "Detailed Description" Analysis',
+                detailSub: 'Deep analysis: Subject outline, clothing, action scene, and camera style.',
+                detailTooltip: '[Difference] Focuses on the "overall composition", ideal for generating story-driven complete scenes. Can be used together with Facial Analysis.',
+                facialTitle: 'Enable "Detailed Facial" Analysis',
+                facialSub: 'Deep analysis: Race, face shape, skin color, hair, eyes, facial features, and lips.',
+                facialTooltip: '[Difference] Focuses on extreme detailing of "facial features", ideal for portrait shots or when precise facial control is required.',
+                tplTitle: 'Quick Style Templates',
+                tpl1: 'E-commerce Hero',
+                tpl2: 'Social Media',
+                tpl3: 'Tech Launch',
+                tpl4: 'Minimalist Lookbook',
+                tpl5: 'B2B Diagram',
+                advTitle: 'Advanced Refinement',
+                optAuto: 'Default (Auto)',
+                optRatio: 'Aspect Ratio',
+                optStyle: 'Artistic Style',
+                optStylePhoto: 'Photorealistic',
+                optStyle3D: '3D Render',
+                optStyleCine: 'Cinematic',
+                optStyleAnime: 'Anime',
+                optLight: 'Lighting',
+                optLightStudio: 'Studio Lighting',
+                optLightCine: 'Cinematic Lighting',
+                optLightGolden: 'Golden Hour',
+                optLightVol: 'Volumetric Lighting',
+                optCam: 'Camera/View',
+                optCamMacro: 'Close-up/Macro Lens',
+                optCamWide: 'Wide Angle',
+                optCamIso: 'Isometric',
+                optColor: 'Color Palette',
+                optColorNeon: 'Neon/Cyberpunk',
+                optColorPastel: 'Pastel',
+                optColorMono: 'Monochromatic',
+                analyzeBtn: 'Analyze Image',
+                enPrompt: 'English Prompt',
+                zhPrompt: 'Chinese Translation',
+                copyEn: 'Copy',
+                copyZh: 'Copy',
+                downloadBtn: 'Download TXT',
+                loading: 'AI is deeply analyzing the image...',
+                placeholderEn: 'The generated English prompt will appear here...',
+                placeholderZh: 'The Chinese translation will appear here...',
+                toastSuccess: 'Success',
+                toastFormatError: 'Please upload an image file (PNG, JPG, WEBP)',
+                toastAnalysisDone: 'Analysis Complete!',
+                toastGenerationDone: 'Prompt Generated Successfully!',
+                toastAnalysisError: 'Generated successfully, but parsing had minor issues.',
+                toastTplApplied: 'Template Applied',
+                toastCopySuccess: 'Copied to clipboard',
+                toastCopyFail: 'Copy failed',
+                toastDownload: 'Downloading',
+                modalTitle: 'User Guide',
+                modalContent: `
+                    <p>Welcome to the Prompt Grabber! A tool that reverse-engineers any image into high-quality drawing prompts.</p>
+                    <ul class="list-disc pl-5 space-y-2">
+                        <li><strong>Upload Image:</strong> Click to upload or drag and drop an image into the dashed box.</li>
+                        <li><strong>General Analysis:</strong> AI quickly captures the core subject and style.</li>
+                        <li><strong>Detailed Description:</strong> Uses 5 strict frameworks: Subject, Clothing, Action, Scene, and Camera.</li>
+                        <li><strong>Detailed Facial:</strong> Extremely detailed facial feature extraction.</li>
+                        <li><strong>Copy & Download:</strong> Easily copy the English prompt for tools like Midjourney, or download as TXT.</li>
+                    </ul>
+                `
+            }
+        };
 
-<!-- Help Modal -->
-<div id="helpModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-  <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-    <div class="p-6 border-b border-slate-200 dark:border-slate-700">
-      <div class="flex justify-between items-center">
-        <h2 id="i18n-modalTitle" class="text-2xl font-bold text-slate-800 dark:text-white">使用說明</h2>
-        <button id="closeHelpBtn" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition">
-          <i class="ph ph-x text-2xl"></i>
-        </button>
-      </div>
-    </div>
-    <div id="i18n-modalContent" class="p-6 text-slate-700 dark:text-slate-300 space-y-4"></div>
-  </div>
-</div>
+        function applyLanguage() {
+            const t = i18n[currentLang];
+            document.getElementById('i18n-help').textContent = t.help;
+            document.getElementById('themeText').textContent = isDarkMode ? t.themeLight : t.themeDark;
+            document.getElementById('i18n-title').textContent = t.title;
+            document.getElementById('i18n-subtitle').textContent = t.subtitle;
+            document.getElementById('i18n-dropText').textContent = t.dropText;
+            document.getElementById('i18n-dropSubText').textContent = t.dropSubText;
+            document.getElementById('i18n-detailTitle').textContent = t.detailTitle;
+            document.getElementById('i18n-detailSub').textContent = t.detailSub;
+            document.getElementById('i18n-detailTooltip').textContent = t.detailTooltip;
+            document.getElementById('i18n-facialTitle').textContent = t.facialTitle;
+            document.getElementById('i18n-facialSub').textContent = t.facialSub;
+            document.getElementById('i18n-facialTooltip').textContent = t.facialTooltip;
+            
+            // 快速模板多語系綁定
+            document.getElementById('i18n-tplTitle').textContent = t.tplTitle;
+            document.getElementById('i18n-tpl1').textContent = t.tpl1;
+            document.getElementById('i18n-tpl2').textContent = t.tpl2;
+            document.getElementById('i18n-tpl3').textContent = t.tpl3;
+            document.getElementById('i18n-tpl4').textContent = t.tpl4;
+            document.getElementById('i18n-tpl5').textContent = t.tpl5;
 
-<!-- Footer -->
-<footer class="text-center text-sm text-slate-500 dark:text-slate-400 pb-6">
-  v0.0.7 | © 2026 <a href="https://huobest.com/" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline">BSD_Homemade</a>
-</footer>
+            // 進階優化多語系綁定
+            document.getElementById('i18n-advTitle').textContent = t.advTitle;
+            document.getElementById('i18n-optRatio').textContent = t.optRatio;
+            document.getElementById('i18n-optStyle').textContent = t.optStyle;
+            document.getElementById('i18n-optLight').textContent = t.optLight;
+            document.getElementById('i18n-optCam').textContent = t.optCam;
+            document.getElementById('i18n-optColor').textContent = t.optColor;
+            
+            ['optAutoRatio', 'optAutoStyle', 'optAutoLight', 'optAutoCam', 'optAutoColor'].forEach(id => document.getElementById(id).textContent = t.optAuto);
+            
+            document.getElementById('i18n-optStylePhoto').textContent = t.optStylePhoto;
+            document.getElementById('i18n-optStyle3D').textContent = t.optStyle3D;
+            document.getElementById('i18n-optStyleCine').textContent = t.optStyleCine;
+            document.getElementById('i18n-optStyleAnime').textContent = t.optStyleAnime;
+            
+            document.getElementById('i18n-optLightStudio').textContent = t.optLightStudio;
+            document.getElementById('i18n-optLightCine').textContent = t.optLightCine;
+            document.getElementById('i18n-optLightGolden').textContent = t.optLightGolden;
+            document.getElementById('i18n-optLightVol').textContent = t.optLightVol;
+            
+            document.getElementById('i18n-optCamMacro').textContent = t.optCamMacro;
+            document.getElementById('i18n-optCamWide').textContent = t.optCamWide;
+            document.getElementById('i18n-optCamIso').textContent = t.optCamIso;
+            
+            document.getElementById('i18n-optColorNeon').textContent = t.optColorNeon;
+            document.getElementById('i18n-optColorPastel').textContent = t.optColorPastel;
+            document.getElementById('i18n-optColorMono').textContent = t.optColorMono;
 
-<script>
-// DOM Elements
-const fileInput = document.getElementById('fileInput');
-const dropZone = document.getElementById('dropZone');
-const uploadPlaceholder = document.getElementById('uploadPlaceholder');
-const imagePreview = document.getElementById('imagePreview');
-const analyzeBtn = document.getElementById('analyzeBtn');
-const detailCheck = document.getElementById('detailCheck');
-const facialCheck = document.getElementById('facialCheck');
-const englishResult = document.getElementById('englishResult');
-const chineseResult = document.getElementById('chineseResult');
-const copyEnBtn = document.getElementById('copyEnBtn');
-const copyZhBtn = document.getElementById('copyZhBtn');
-const downloadBtn = document.getElementById('downloadBtn');
-const loadingOverlay = document.getElementById('loadingOverlay');
-const themeBtn = document.getElementById('themeBtn');
-const themeIcon = document.getElementById('themeIcon');
-const themeText = document.getElementById('themeText');
-const langBtn = document.getElementById('langBtn');
-const langText = document.getElementById('langText');
-const helpBtn = document.getElementById('helpBtn');
-const helpModal = document.getElementById('helpModal');
-const closeHelpBtn = document.getElementById('closeHelpBtn');
-const toast = document.getElementById('toast');
-const toastMsg = document.getElementById('toastMsg');
+            document.getElementById('i18n-analyzeBtn').textContent = t.analyzeBtn;
+            document.getElementById('i18n-enPrompt').textContent = t.enPrompt;
+            document.getElementById('i18n-zhPrompt').textContent = t.zhPrompt;
+            document.getElementById('i18n-copyEn').textContent = t.copyEn;
+            document.getElementById('i18n-copyZh').textContent = t.copyZh;
+            document.getElementById('i18n-downloadBtn').textContent = t.downloadBtn;
+            document.getElementById('i18n-loading').textContent = t.loading;
+            
+            englishResult.placeholder = t.placeholderEn;
+            chineseResult.placeholder = t.placeholderZh;
+            
+            document.getElementById('i18n-modalTitle').textContent = t.modalTitle;
+            document.getElementById('i18n-modalContent').innerHTML = t.modalContent;
+        }
 
-// State variables
-let currentBase64 = null;
-let currentMimeType = null;
-let isDarkMode = true;
-let currentLang = 'zh-TW';
-const apiKey = ""; // TODO: Add your Gemini API Key here
+        langBtn.addEventListener('click', () => {
+            currentLang = currentLang === 'zh-TW' ? 'en' : 'zh-TW';
+            langText.textContent = currentLang === 'zh-TW' ? 'EN' : '中';
+            applyLanguage();
+        });
 
-// i18n Dictionary
-const i18n = {
-  'zh-TW': {
-    help: '說明',
-    themeLight: '亮色',
-    themeDark: '暗色',
-    title: '提示詞抓取器',
-    subtitle: '上傳圖片，AI 將自動為你解析並生成高質量的繪圖提示詞。',
-    dropText: '點擊或拖曳圖片至此',
-    dropSubText: '支援 PNG, JPG, WEBP',
-    detailTitle: '啟用「詳細描述」層次分析',
-    detailSub: '深度解析：主體輪廈、服裝配件、動作場景與鏡頭風格',
-    detailTooltip: '【差異說明】側重於「整體畫面」的批批，適合生成具有故事性的完整場景，與詳詳詳証的更可以加使用。',
-    facialTitle: '啟用「詳詳場」特層分析',
-    facialSub: '深度解析：人種、臉型、膚色、髮型/色、眼睛/瞳孔、鼻頭、臉頌、下巴、耳朵、鬢型/鬢習/鬢尖、唇形與眉毛',
-    facialTooltip: '【差異說明】側重於「臉部特徵」的極度詳細，適合生成特層人物肘像，或需要精細控制臉部時使用。',
-    analyzeBtn: '分析圖片',
-    enPrompt: '英文提示詞',
-    zhPrompt: '中文對照',
-    copyEn: '複製',
-    copyZh: '複製',
-    downloadBtn: '下載 TXT (包含中英對照)',
-    loading: 'AI 正在深度解析圖片詳情...',
-    placeholderEn: '分析後的英文提示詞將顯示於此...',
-    placeholderZh: '中文翻譯將顯示於此...',
-    toastSuccess: '操作成功',
-    toastFormatError: '請上傳圖片檔案 (PNG, JPG, WEBP)',
-    toastAnalysisDone: '分析完成！',
-    toastGenerationDone: '提示詞生成成功！',
-    toastAnalysisError: '生成成功，但此式解析有異常',
-    toastCopySuccess: '已複製到剪貼簿',
-    toastCopyFail: '複製失敗',
-    toastDownload: '開始下載',
-    modalTitle: '使用說明',
-    modalContent: `<p>歡迎使用提示詞抓取器！</p>`
-  },
-  'en': {
-    help: 'Help',
-    themeLight: 'Light',
-    themeDark: 'Dark',
-    title: 'Prompt Grabber',
-    subtitle: 'Upload an image, and AI will automatically analyze and generate high-quality prompts.',
-    dropText: 'Click or drag image here',
-    dropSubText: 'Supports PNG, JPG, WEBP',
-    detailTitle: 'Enable "Detailed Description" Analysis',
-    detailSub: 'Deep analysis: Subject outline, clothing, action scene, and camera style.',
-    detailTooltip: '[Difference] Focuses on the "overall composition", ideal for generating story-driven complete scenes.',
-    facialTitle: 'Enable "Detailed Facial" Analysis',
-    facialSub: 'Deep analysis: Race, face shape, skin color, hair, eyes, facial features, and lips.',
-    facialTooltip: '[Difference] Focuses on extreme detailing of "facial features".',
-    analyzeBtn: 'Analyze Image',
-    enPrompt: 'English Prompt',
-    zhPrompt: 'Chinese Translation',
-    copyEn: 'Copy',
-    copyZh: 'Copy',
-    downloadBtn: 'Download TXT',
-    loading: 'AI is deeply analyzing the image...',
-    placeholderEn: 'The generated English prompt will appear here...',
-    placeholderZh: 'The Chinese translation will appear here...',
-    toastSuccess: 'Success',
-    toastFormatError: 'Please upload an image file (PNG, JPG, WEBP)',
-    toastAnalysisDone: 'Analysis Complete!',
-    toastGenerationDone: 'Prompt Generated Successfully!',
-    toastAnalysisError: 'Generated successfully, but parsing had minor issues.',
-    toastCopySuccess: 'Copied to clipboard',
-    toastCopyFail: 'Copy failed',
-    toastDownload: 'Downloading',
-    modalTitle: 'User Guide',
-    modalContent: `<p>Welcome to the Prompt Grabber!</p>`
-  }
-};
+        // Init language on load
+        applyLanguage();
 
-function applyLanguage() {
-  const t = i18n[currentLang];
-  document.getElementById('i18n-help').textContent = t.help;
-  document.getElementById('themeText').textContent = isDarkMode ? t.themeLight : t.themeDark;
-  document.getElementById('i18n-title').textContent = t.title;
-  document.getElementById('i18n-subtitle').textContent = t.subtitle;
-  document.getElementById('i18n-dropText').textContent = t.dropText;
-  document.getElementById('i18n-dropSubText').textContent = t.dropSubText;
-  document.getElementById('i18n-detailTitle').textContent = t.detailTitle;
-  document.getElementById('i18n-detailSub').textContent = t.detailSub;
-  document.getElementById('i18n-detailTooltip').textContent = t.detailTooltip;
-  document.getElementById('i18n-facialTitle').textContent = t.facialTitle;
-  document.getElementById('i18n-facialSub').textContent = t.facialSub;
-  document.getElementById('i18n-facialTooltip').textContent = t.facialTooltip;
-  document.getElementById('i18n-analyzeBtn').textContent = t.analyzeBtn;
-  document.getElementById('i18n-enPrompt').textContent = t.enPrompt;
-  document.getElementById('i18n-zhPrompt').textContent = t.zhPrompt;
-  document.getElementById('i18n-copyEn').textContent = t.copyEn;
-  document.getElementById('i18n-copyZh').textContent = t.copyZh;
-  document.getElementById('i18n-downloadBtn').textContent = t.downloadBtn;
-  document.getElementById('i18n-loading').textContent = t.loading;
-  englishResult.placeholder = t.placeholderEn;
-  chineseResult.placeholder = t.placeholderZh;
-  document.getElementById('i18n-modalTitle').textContent = t.modalTitle;
-  document.getElementById('i18n-modalContent').innerHTML = t.modalContent;
-}
+        // --- Theme Toggle ---
+        themeBtn.addEventListener('click', () => {
+            isDarkMode = !isDarkMode;
+            if (isDarkMode) {
+                document.documentElement.classList.add('dark');
+                themeIcon.className = 'ph ph-sun text-yellow-400 text-lg';
+                themeText.textContent = i18n[currentLang].themeLight;
+            } else {
+                document.documentElement.classList.remove('dark');
+                themeIcon.className = 'ph ph-moon text-slate-500 text-lg';
+                themeText.textContent = i18n[currentLang].themeDark;
+            }
+        });
 
-langBtn.addEventListener('click', () => {
-  currentLang = currentLang === 'zh-TW' ? 'en' : 'zh-TW';
-  langText.textContent = currentLang === 'zh-TW' ? 'EN' : '中';
-  applyLanguage();
-});
+        // --- Help Modal ---
+        helpBtn.addEventListener('click', () => helpModal.classList.remove('hidden'));
+        closeHelpBtn.addEventListener('click', () => helpModal.classList.add('hidden'));
+        helpModal.addEventListener('click', (e) => {
+            if (e.target === helpModal) helpModal.classList.add('hidden');
+        });
 
-applyLanguage();
+        // --- Template Button Logic ---
+        const templatesData = {
+            ecommerce: { ratio: '--ar 1:1', style: 'photo', light: 'studio', cam: 'macro', color: 'mono' },
+            social: { ratio: '--ar 9:16', style: 'photo', light: 'golden', cam: 'wide', color: 'pastel' },
+            tech: { ratio: '--ar 16:9', style: '3d', light: 'vol', cam: 'iso', color: 'neon' },
+            minimal: { ratio: '--ar 3:4', style: 'cine', light: 'studio', cam: 'macro', color: 'mono' },
+            b2b: { ratio: '--ar 16:9', style: '3d', light: 'studio', cam: 'iso', color: '' }
+        };
 
-// Theme Toggle
-themeBtn.addEventListener('click', () => {
-  isDarkMode = !isDarkMode;
-  if (isDarkMode) {
-    document.documentElement.classList.add('dark');
-    themeIcon.className = 'ph ph-sun text-yellow-400 text-lg';
-    themeText.textContent = i18n[currentLang].themeLight;
-  } else {
-    document.documentElement.classList.remove('dark');
-    themeIcon.className = 'ph ph-moon text-slate-500 text-lg';
-    themeText.textContent = i18n[currentLang].themeDark;
-  }
-});
+        document.querySelectorAll('.tpl-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const tplKey = e.currentTarget.getAttribute('data-tpl');
+                const tpl = templatesData[tplKey];
+                if(tpl) {
+                    document.getElementById('advRatio').value = tpl.ratio;
+                    document.getElementById('advStyle').value = tpl.style;
+                    document.getElementById('advLight').value = tpl.light;
+                    document.getElementById('advCam').value = tpl.cam;
+                    document.getElementById('advColor').value = tpl.color;
+                    showToast(i18n[currentLang].toastTplApplied, 'success');
+                }
+            });
+        });
 
-// Help Modal
-helpBtn.addEventListener('click', () => helpModal.classList.remove('hidden'));
-closeHelpBtn.addEventListener('click', () => helpModal.classList.add('hidden'));
-helpModal.addEventListener('click', (e) => {
-  if (e.target === helpModal) helpModal.classList.add('hidden');
-});
+        // --- Drag & Drop Implementation ---
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
 
-// Drag & Drop Implementation
-['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-  dropZone.addEventListener(eventName, preventDefaults, false);
-});
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
 
-function preventDefaults(e) {
-  e.preventDefault();
-  e.stopPropagation();
-}
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.add('drop-zone-active'), false);
+        });
 
-['dragenter', 'dragover'].forEach(eventName => {
-  dropZone.addEventListener(eventName, () => dropZone.classList.add('drop-zone-active'), false);
-});
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.remove('drop-zone-active'), false);
+        });
 
-['dragleave', 'drop'].forEach(eventName => {
-  dropZone.addEventListener(eventName, () => dropZone.classList.remove('drop-zone-active'), false);
-});
+        dropZone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files.length > 0) handleFile(files[0]);
+        });
 
-dropZone.addEventListener('drop', (e) => {
-  const dt = e.dataTransfer;
-  const files = dt.files;
-  if (files.length > 0) handleFile(files[0]);
-});
+        fileInput.addEventListener('change', function() {
+            if (this.files.length > 0) handleFile(this.files[0]);
+        });
 
-fileInput.addEventListener('change', function() {
-  if (this.files.length > 0) handleFile(this.files[0]);
-});
+        function handleFile(file) {
+            if (!file.type.startsWith('image/')) {
+                showToast(i18n[currentLang].toastFormatError, 'error');
+                return;
+            }
 
-function handleFile(file) {
-  if (!file.type.startsWith('image/')) {
-    showToast(i18n[currentLang].toastFormatError, 'error');
-    return;
-  }
-  currentMimeType = file.type;
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    imagePreview.src = e.target.result;
-    imagePreview.classList.remove('hidden');
-    uploadPlaceholder.classList.add('hidden');
-    currentBase64 = e.target.result.split(',')[1];
-    analyzeBtn.disabled = false;
-    englishResult.value = '';
-    chineseResult.value = '';
-    copyEnBtn.disabled = true;
-    copyZhBtn.disabled = true;
-    downloadBtn.disabled = true;
-  }
-  reader.readAsDataURL(file);
-}
+            currentMimeType = file.type;
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                imagePreview.src = e.target.result;
+                imagePreview.classList.remove('hidden');
+                uploadPlaceholder.classList.add('hidden');
+                
+                currentBase64 = e.target.result.split(',')[1];
+                analyzeBtn.disabled = false;
+                
+                englishResult.value = '';
+                chineseResult.value = '';
+                copyEnBtn.disabled = true;
+                copyZhBtn.disabled = true;
+                downloadBtn.disabled = true;
+            }
+            reader.readAsDataURL(file);
+        }
 
-// API & Retry Logic
-async function fetchWithRetry(url, options, maxRetries = 5) {
-  const delays = [1000, 2000, 4000, 8000, 16000];
-  for (let i = 0; i <= maxRetries; i++) {
-    try {
-      const response = await fetch(url, options);
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error?.message || `HTTP Error: ${response.status}`);
-      }
-      return await response.json();
-    } catch (err) {
-      if (i === maxRetries) throw err;
-      await new Promise(resolve => setTimeout(resolve, delays[i]));
-    }
-  }
-}
+        // --- API & Retry Logic ---
+        async function fetchWithRetry(url, options, maxRetries = 5) {
+            const delays = [1000, 2000, 4000, 8000, 16000];
+            for (let i = 0; i <= maxRetries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({}));
+                        throw new Error(errorData.error?.message || `HTTP Error: ${response.status}`);
+                    }
+                    return await response.json();
+                } catch (err) {
+                    if (i === maxRetries) throw err;
+                    await new Promise(resolve => setTimeout(resolve, delays[i]));
+                }
+            }
+        }
 
-// Analysis Execution
-analyzeBtn.addEventListener('click', async () => {
-  if (!currentBase64 || !currentMimeType) return;
-  analyzeBtn.disabled = true;
-  loadingOverlay.classList.remove('hidden');
-  englishResult.value = '';
-  chineseResult.value = '';
-  copyEnBtn.disabled = true;
-  copyZhBtn.disabled = true;
-  downloadBtn.disabled = true;
+        // --- Analysis Execution ---
+        analyzeBtn.addEventListener('click', async () => {
+            if (!currentBase64 || !currentMimeType) return;
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`;
-  
-  let promptText = "Please analyze this image in extreme detail and generate a highly descriptive, comprehensive text-to-image prompt (suitable for Midjourney or Stable Diffusion).\\n";
-  
-  let frameworks = [];
-  if (detailCheck.checked) {
-    frameworks.push(`- Subject/Character & Action/Pose (e.g., posture, gestures, interaction).\\n- Clothing/Accessories (e.g., dressing style, outfit, jewelry, props).\\n- Scene/Atmosphere (e.g., location, time, weather, environment decorations, lighting/shadows).\\n- Camera/Style (e.g., focal length, aperture, composition, shot type, style, viewing angle).`);
-  }
-  if (facialCheck.checked) {
-    frameworks.push(`- Detailed Facial Features (MUST include specific descriptive terms for: Race/Ethnicity, Face Shape, Skin Color, Hair Color/Style, Eye Shape, Pupil Color/Shape, Forehead, Cheeks, Chin, Ears, Nose Shape/Wings/Tip, Lips, Eyebrows).`);
-  }
-  
-  if (frameworks.length > 0) {
-    promptText += `YOU MUST strictly use the following framework to structure your prompt and provide rich, exhaustive details:\\n${frameworks.join('\\n')}\\n`;
-  } else {
-    promptText += `Focus strictly on the subject, action, lighting, camera angle, medium, style, and mood.\\n`;
-  }
-  
-  promptText += `The resulting prompt must be lengthy and highly descriptive to allow perfect recreation of the original image.\\nOutput ONLY a valid JSON object with two keys:\\n"english": "the highly detailed English prompt (comma separated keywords preferred)",\\n"chinese": "the Traditional Chinese translation of the prompt"\\nDo not include any other text or markdown formatting.`;
-  
-  const payload = {
-    contents: [{
-      role: "user",
-      parts: [
-        { text: promptText },
-        { inlineData: { mimeType: currentMimeType, data: currentBase64 } }
-      ]
-    }]
-  };
-  
-  try {
-    const data = await fetchWithRetry(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    
-    const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    
-    if (generatedText) {
-      try {
-        const cleanJson = generatedText.replace(/```json/g, '').replace(/```/g, '').trim();
-        const resultObj = JSON.parse(cleanJson);
-        englishResult.value = resultObj.english || '';
-        chineseResult.value = resultObj.chinese || '';
-        copyEnBtn.disabled = false;
-        copyZhBtn.disabled = false;
-        downloadBtn.disabled = false;
-        const msgKey = (detailCheck.checked || facialCheck.checked) ? 'toastAnalysisDone' : 'toastGenerationDone';
-        showToast(i18n[currentLang][msgKey], 'success');
-      } catch (e) {
-        englishResult.value = generatedText;
-        copyEnBtn.disabled = false;
-        downloadBtn.disabled = false;
-        showToast(i18n[currentLang].toastAnalysisError, 'success');
-      }
-    } else {
-      throw new Error("Cannot retrieve complete response from API.");
-    }
-  } catch (error) {
-    console.error("API Error:", error);
-    englishResult.value = `API Request Error:\\n${error.message}`;
-    showToast('Generation failed.', 'error');
-  } finally {
-    analyzeBtn.disabled = false;
-    loadingOverlay.classList.add('hidden');
-  }
-});
+            // UI State updates
+            analyzeBtn.disabled = true;
+            loadingOverlay.classList.remove('hidden');
+            englishResult.value = '';
+            chineseResult.value = '';
+            copyEnBtn.disabled = true;
+            copyZhBtn.disabled = true;
+            downloadBtn.disabled = true;
 
-// Clipboard & Download Functionality
-function copyToClipboard(text) {
-  const textArea = document.createElement("textarea");
-  textArea.value = text;
-  textArea.style.position = "fixed";
-  textArea.style.left = "-999999px";
-  textArea.style.top = "-999999px";
-  document.body.appendChild(textArea);
-  textArea.focus();
-  textArea.select();
-  try {
-    document.execCommand('copy');
-    showToast(i18n[currentLang].toastCopySuccess, 'success');
-  } catch (err) {
-    showToast(i18n[currentLang].toastCopyFail, 'error');
-  } finally {
-    textArea.remove();
-  }
-}
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            
+            let promptText = "Please analyze this image in extreme detail and generate a highly descriptive, comprehensive text-to-image prompt (suitable for Midjourney or Stable Diffusion).\n";
+            
+            let frameworks = [];
+            if (detailCheck.checked) {
+                frameworks.push(`- Subject/Character & Action/Pose (e.g., posture, gestures, interaction).\n- Clothing/Accessories (e.g., dressing style, outfit, jewelry, props).\n- Scene/Atmosphere (e.g., location, time, weather, environment decorations, lighting/shadows).\n- Camera/Style (e.g., focal length, aperture, composition, shot type, style, viewing angle).`);
+            }
+            if (facialCheck.checked) {
+                frameworks.push(`- Detailed Facial Features (MUST include specific descriptive terms for: Race/Ethnicity, Face Shape (e.g. oval, square, high cheekbones), Skin Color, Hair Color/Style (e.g. ombre, messy waves, pixie cut), Eye Shape (e.g. fox eyes, almond, doe eyes), Pupil Color/Shape, Forehead, Cheeks, Chin, Ears (e.g. elf ears, protruding), Nose Shape/Wings/Tip (e.g. aquiline, button nose), Lips (e.g. cherry lips, downturned), Eyebrows (e.g. arched, bushy)).`);
+            }
 
-copyEnBtn.addEventListener('click', () => {
-  if (englishResult.value) copyToClipboard(englishResult.value);
-});
+            if (frameworks.length > 0) {
+                promptText += `YOU MUST strictly use the following framework to structure your prompt and provide rich, exhaustive details:\n${frameworks.join('\n')}\n`;
+            } else {
+                promptText += `Focus strictly on the subject, action, lighting, camera angle, medium, style, and mood.\n`;
+            }
 
-copyZhBtn.addEventListener('click', () => {
-  if (chineseResult.value) copyToClipboard(chineseResult.value);
-});
+            promptText += `The resulting prompt must be lengthy and highly descriptive to allow perfect recreation of the original image.\nOutput ONLY a valid JSON object with two keys:\n"english": "the highly detailed English prompt (comma separated keywords preferred)",\n"chinese": "the Traditional Chinese translation of the prompt"\nDo not include any other text or markdown formatting.`;
 
-downloadBtn.addEventListener('click', () => {
-  if (!englishResult.value) return;
-  const content = `【English Prompt】\\n${englishResult.value}\\n\\n【中文對照】\\n${chineseResult.value}`;
-  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `Prompt_${new Date().getTime()}.txt`;
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => {
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
-  }, 0);
-  showToast(i18n[currentLang].toastDownload, 'success');
-});
+            const payload = {
+                contents: [{
+                    role: "user",
+                    parts: [
+                        { text: promptText },
+                        { inlineData: { mimeType: currentMimeType, data: currentBase64 } }
+                    ]
+                }]
+            };
 
-// Toast Notifications
-let toastTimeout;
-function showToast(message, type = 'success') {
-  toastMsg.textContent = message;
-  const icon = toast.querySelector('i');
-  if (type === 'success') {
-    icon.className = 'ph ph-check-circle text-green-400 dark:text-green-500 text-xl';
-  } else {
-    icon.className = 'ph ph-warning-circle text-red-400 dark:text-red-500 text-xl';
-  }
-  toast.classList.remove('opacity-0', 'translate-y-4');
-  toast.classList.add('opacity-100', 'translate-y-0');
-  clearTimeout(toastTimeout);
-  toastTimeout = setTimeout(() => {
-    toast.classList.remove('opacity-100', 'translate-y-0');
-    toast.classList.add('opacity-0', 'translate-y-4');
-  }, 3000);
-}
-</script>
+            try {
+                const data = await fetchWithRetry(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (generatedText) {
+                    try {
+                        const cleanJson = generatedText.replace(/```json/g, '').replace(/```/g, '').trim();
+                        const resultObj = JSON.parse(cleanJson);
+                        
+                        // --- 處理進階提示詞優化後綴 ---
+                        let enSuffix = [];
+                        let zhSuffix = [];
+                        
+                        const selStyle = document.getElementById('advStyle').value;
+                        if(selStyle === 'photo') { enSuffix.push('photorealistic, masterpiece, highly detailed'); zhSuffix.push('極致擬真, 傑作, 極高細節'); }
+                        else if(selStyle === '3d') { enSuffix.push('3D render, octane render, unreal engine 5'); zhSuffix.push('3D渲染, octane渲染, 虛幻引擎5'); }
+                        else if(selStyle === 'cine') { enSuffix.push('cinematic shot, 8k resolution'); zhSuffix.push('電影級鏡頭, 8k解析度'); }
+                        else if(selStyle === 'anime') { enSuffix.push('anime style, studio ghibli, makoto shinkai'); zh: zhSuffix.push('動漫風格, 吉卜力工作室, 新海誠'); }
+                        
+                        const selLight = document.getElementById('advLight').value;
+                        if(selLight === 'studio') { enSuffix.push('studio lighting, professional studio setup'); zhSuffix.push('攝影棚打光, 專業攝影棚設置'); }
+                        else if(selLight === 'cine') { enSuffix.push('cinematic lighting, dramatic shadows'); zhSuffix.push('電影光影, 戲劇性陰影'); }
+                        else if(selLight === 'golden') { enSuffix.push('golden hour, warm sunlight, sunset'); zhSuffix.push('黃金時刻, 溫暖陽光, 日落'); }
+                        else if(selLight === 'vol') { enSuffix.push('volumetric lighting, god rays, atmospheric'); zhSuffix.push('體積光, 耶穌光, 充滿氛圍'); }
+
+                        const selCam = document.getElementById('advCam').value;
+                        if(selCam === 'macro') { enSuffix.push('macro lens, extreme close-up, depth of field'); zhSuffix.push('微距鏡頭, 極致特寫, 景深'); }
+                        else if(selCam === 'wide') { enSuffix.push('wide angle lens, expansive view'); zhSuffix.push('廣角鏡頭, 廣闊視野'); }
+                        else if(selCam === 'iso') { enSuffix.push('isometric perspective, 2.5D'); zhSuffix.push('等距視角, 2.5D'); }
+
+                        const selColor = document.getElementById('advColor').value;
+                        if(selColor === 'neon') { enSuffix.push('neon colors, cyberpunk palette'); zhSuffix.push('霓虹色彩, 賽博龐克色調'); }
+                        else if(selColor === 'pastel') { enSuffix.push('pastel color palette, soft colors'); zhSuffix.push('柔和粉嫩色調, 輕柔色彩'); }
+                        else if(selColor === 'mono') { enSuffix.push('monochromatic, sleek, unified color'); zhSuffix.push('單色調, 時尚, 統一色彩'); }
+
+                        let finalEn = resultObj.english || '';
+                        let finalZh = resultObj.chinese || '';
+
+                        // 組合關鍵字
+                        if (enSuffix.length > 0) finalEn += ', ' + enSuffix.join(', ');
+                        if (zhSuffix.length > 0) finalZh += '，' + zhSuffix.join('，');
+
+                        // 附加畫面比例參數 (如 --ar 16:9)
+                        const selAr = document.getElementById('advRatio').value;
+                        if (selAr) {
+                            finalEn += ' ' + selAr;
+                            finalZh += ' ' + selAr; 
+                        }
+
+                        englishResult.value = finalEn;
+                        chineseResult.value = finalZh;
+                        
+                        copyEnBtn.disabled = false;
+                        copyZhBtn.disabled = false;
+                        downloadBtn.disabled = false;
+                        
+                        const msgKey = (detailCheck.checked || facialCheck.checked) ? 'toastAnalysisDone' : 'toastGenerationDone';
+                        showToast(i18n[currentLang][msgKey], 'success');
+                    } catch (e) {
+                        englishResult.value = generatedText;
+                        copyEnBtn.disabled = false;
+                        downloadBtn.disabled = false;
+                        showToast(i18n[currentLang].toastAnalysisError, 'success');
+                    }
+                } else {
+                    throw new Error("Cannot retrieve complete response from API.");
+                }
+            } catch (error) {
+                console.error("API Error:", error);
+                englishResult.value = `API Request Error / API 請求發生錯誤:\n${error.message}`;
+                showToast('Generation failed. / 生成失敗。', 'error');
+            } finally {
+                analyzeBtn.disabled = false;
+                loadingOverlay.classList.add('hidden');
+            }
+        });
+
+        // --- Clipboard & Download Functionality ---
+        function copyToClipboard(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            textArea.style.left = "-999999px";
+            textArea.style.top = "-999999px";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                document.execCommand('copy');
+                showToast(i18n[currentLang].toastCopySuccess, 'success');
+            } catch (err) {
+                showToast(i18n[currentLang].toastCopyFail, 'error');
+            } finally {
+                textArea.remove();
+            }
+        }
+
+        copyEnBtn.addEventListener('click', () => {
+            if (englishResult.value) copyToClipboard(englishResult.value);
+        });
+
+        copyZhBtn.addEventListener('click', () => {
+            if (chineseResult.value) copyToClipboard(chineseResult.value);
+        });
+
+        downloadBtn.addEventListener('click', () => {
+            if (!englishResult.value) return;
+            
+            const content = `【English Prompt】\n${englishResult.value}\n\n【中文對照】\n${chineseResult.value}`;
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            
+            a.href = url;
+            a.download = `Prompt_${new Date().getTime()}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            
+            setTimeout(() => {
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            }, 0);
+            
+            showToast(i18n[currentLang].toastDownload, 'success');
+        });
+
+        // --- Toast Notifications ---
+        let toastTimeout;
+        function showToast(message, type = 'success') {
+            toastMsg.textContent = message;
+            
+            const icon = toast.querySelector('i');
+            if (type === 'success') {
+                icon.className = 'ph ph-check-circle text-brand-positive dark:text-green-500 text-xl';
+            } else {
+                icon.className = 'ph ph-warning-circle text-brand-negative dark:text-red-500 text-xl';
+            }
+
+            toast.classList.remove('opacity-0', 'translate-y-4');
+            toast.classList.add('opacity-100', 'translate-y-0');
+
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('opacity-100', 'translate-y-0');
+                toast.classList.add('opacity-0', 'translate-y-4');
+            }, 3000);
+        }
+    </script>
 </body>
 </html>
